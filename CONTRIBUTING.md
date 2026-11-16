@@ -62,7 +62,7 @@ We are committed to making this a welcoming space for everyone regardless of
 experience level, background, or identity. Harassment, discrimination, or
 disrespectful behavior of any kind will not be tolerated.
 
-**To report a violation:** Email **ansmajidali@gmail.com** — all reports are
+**To report a violation:** Email **varshini200502@users.noreply.github.com** — all reports are
 handled confidentially.
 
 ---
@@ -79,9 +79,9 @@ to contribute. Here's a rough guide by experience level:
 | **Advanced** | Implement Roadmap features, refactor views, improve performance, add APIs |
 
 If you're unsure where to start, look for issues tagged
-[`good first issue`](https://github.com/Ansarimajid/College-ERP/issues?q=label%3A%22good+first+issue%22)
+[`good first issue`](https://github.com/varshini200502/college-erp/issues?q=label%3A%22good+first+issue%22)
 or
-[`help wanted`](https://github.com/Ansarimajid/College-ERP/issues?q=label%3A%22help+wanted%22).
+[`help wanted`](https://github.com/varshini200502/college-erp/issues?q=label%3A%22help+wanted%22).
 
 ---
 
@@ -90,22 +90,22 @@ or
 Contributing goes well beyond writing code:
 
 ### 🐛 Report bugs
-Found something broken on the [live demo](https://syncx.pythonanywhere.com)
+Found something broken on the [live demo](https://github.com/varshini200502/college-erp)
 or while running locally? Open an issue with detailed steps to reproduce.
 
 ### 💡 Suggest features
 Have an idea not on the Roadmap? Start a
-[GitHub Discussion](https://github.com/Ansarimajid/College-ERP/discussions)
+[GitHub Discussion](https://github.com/varshini200502/college-erp/discussions)
 first so the community can weigh in before it becomes a formal issue.
 
 ### 🔧 Fix bugs
 Browse open issues labeled
-[`bug`](https://github.com/Ansarimajid/College-ERP/issues?q=label%3Abug)
+[`bug`](https://github.com/varshini200502/college-erp/issues?q=label%3Abug)
 and submit a fix via pull request.
 
 ### ✨ Build features
 Pick something from the [Roadmap](#-roadmap--priorities) or a
-[`feature request`](https://github.com/Ansarimajid/College-ERP/issues?q=label%3Aenhancement)
+[`feature request`](https://github.com/varshini200502/college-erp/issues?q=label%3Aenhancement)
 issue. Comment on the issue first to avoid duplicate work.
 
 ### 📖 Improve documentation
@@ -126,7 +126,7 @@ Django i18n translations.
 
 ### 💬 Help other contributors
 Answer questions in
-[GitHub Discussions](https://github.com/Ansarimajid/College-ERP/discussions),
+[GitHub Discussions](https://github.com/varshini200502/college-erp/discussions),
 review open pull requests, or mentor new contributors.
 
 ---
@@ -159,7 +159,7 @@ pip --version
 **Step 1 — Fork the repository**
 
 Click the **Fork** button at the top-right of the
-[College-ERP repo](https://github.com/Ansarimajid/College-ERP).
+[College-ERP repo](https://github.com/varshini200502/college-erp).
 This creates your own copy under your GitHub account.
 
 **Step 2 — Clone your fork**
@@ -174,12 +174,12 @@ cd College-ERP
 This lets you pull future changes from the original repo:
 
 ```bash
-git remote add upstream https://github.com/Ansarimajid/College-ERP.git
+git remote add upstream https://github.com/varshini200502/college-erp.git
 
 # Verify remotes
 git remote -v
 # origin    https://github.com/YOUR_USERNAME/College-ERP.git (fetch)
-# upstream  https://github.com/Ansarimajid/College-ERP.git  (fetch)
+# upstream  https://github.com/varshini200502/college-erp.git  (fetch)
 ```
 
 ---
@@ -188,23 +188,7 @@ git remote -v
 
 Choose one of two methods:
 
-#### Option A — Conda (Recommended)
-
-A `college-erp.yml` file is included in the root. This sets up a complete
-environment with all dependencies:
-
-```bash
-conda env create -f college-erp.yml
-conda activate Django-env
-```
-
-To update the environment after pulling changes:
-
-```bash
-conda env update -f college-erp.yml --prune
-```
-
-#### Option B — Python venv
+#### Recommended — Python Virtual Environment (venv)
 
 **macOS / Linux:**
 ```bash
@@ -270,37 +254,48 @@ Visit `http://127.0.0.1:8000` — you should see the College ERP login page.
 College-ERP/
 │
 ├── college_management_system/      # Django project configuration
-│   ├── settings.py                 # App settings, database, static files
+│   ├── settings.py                 # App settings, database, WhiteNoise, PostgreSQL/SQLite
 │   ├── urls.py                     # Root URL dispatcher
 │   └── wsgi.py                     # WSGI entry point for deployment
 │
 ├── main_app/                       # Core Django application
 │   ├── migrations/                 # Database migration files
 │   ├── templates/
-│   │   └── main_app/               # All HTML templates
+│   │   └── main_app/               # All HTML templates across six portals
 │   │       ├── admin_templates/    # HOD/Admin views
 │   │       ├── staff_templates/    # Staff views
-│   │       └── student_templates/  # Student views
-│   ├── static/                     # App-level static files
-│   ├── models.py                   # All database models
-│   ├── views.py                    # All role-based view logic
+│   │       ├── student_templates/  # Student views
+│   │       ├── principal_templates/# Principal executive views
+│   │       ├── finance_templates/  # Finance & fee management views
+│   │       └── accreditation_templates/ # NAAC & NBA views
+│   ├── static/                     # App-level static assets (AdminLTE, CSS, JS)
+│   ├── models.py                   # Unified database models across academic & finance
+│   ├── views.py                    # Authentication & session dispatch
+│   ├── hod_views.py                # Admin/HOD controller
+│   ├── staff_views.py              # Faculty controller
+│   ├── student_views.py            # Student portal controller
+│   ├── principal_views.py          # Principal executive portal
+│   ├── finance_views.py            # Fee structure, payments & receipts
+│   ├── accreditation_views.py      # NAAC SSR & NBA CO-PO attainment
+│   ├── pdf_generator.py            # Zero-dependency binary PDF receipt engine
+│   ├── middleware.py               # Role-based access control middleware
 │   ├── forms.py                    # Django forms
 │   ├── urls.py                     # App-level URL routes
 │   └── EmailBackend.py             # Custom email authentication
 │
 ├── media/                          # User-uploaded files (profile photos)
-├── Showcase/                       # Screenshots used in README
-├── reports_and_resource/           # Supporting documents
-│
 ├── manage.py                       # Django management script
-├── requirements.txt                # Python dependencies
-├── college-erp.yml                 # Conda environment definition
-├── Procfile                        # Deployment config (PythonAnywhere)
-├── db.sqlite3                      # SQLite database (development only)
-├── .gitignore
-├── LICENSE
-├── README.md
+├── requirements.txt                # Python dependencies (Django, psycopg2, WhiteNoise)
+├── Procfile                        # Deployment process definition (Gunicorn)
+├── render-build.sh                 # Render build script (pip install, collectstatic, migrate)
+├── runtime.txt                     # Target Python version (python-3.11.9)
+├── verify_all_roles.py             # 25-point integration & RBAC test suite
+├── seed_demo_data.py               # Deterministic institutional seed data
+├── .gitignore                      # Git exclusions (db.sqlite3, .env, staticfiles/)
+├── LICENSE                         # MIT License attribution
+├── README.md                       # Comprehensive institutional documentation
 ├── CODE_OF_CONDUCT.md
+├── SECURITY.md
 └── CONTRIBUTING.md                 # This file
 ```
 
@@ -308,16 +303,19 @@ College-ERP/
 
 ## 🧠 Understanding the Codebase
 
-### Three User Roles
+### Institutional User Roles (Six Active Roles)
 
-The entire application is built around three user types, each with its own
-login, dashboard, and permission scope:
+The application implements a strict six-role Role-Based Access Control (RBAC) architecture,
+each with dedicated navigation, views, and data isolation:
 
 | Role | Description | Key Capabilities |
 |------|-------------|-----------------|
-| **HODAdmin** | Head of Department / Administrator | Full CRUD on staff, students, courses, subjects, sessions; view all attendance & results; manage leave approvals & feedback |
-| **Staff** | Teaching faculty | Mark attendance, enter results, apply for leave, send feedback to admin |
-| **Student** | Enrolled students | View own attendance & results, apply for leave, send feedback |
+| **Admin / HOD** | Head of Department / Administrator | Full CRUD on staff, students, courses, subjects, sessions; academic attendance, results, leave management |
+| **Principal** | Executive Leadership | Cross-institutional analytics, college-wide attendance, financial oversight, alumni network |
+| **Faculty / Staff** | Teaching faculty | Mark attendance, enter results, apply for leave, send feedback to admin |
+| **Student** | Enrolled students | View own attendance & results, apply for leave, view fee ledger, download PDF fee receipts |
+| **Finance Officer** | Financial Administration | Configure fee structures, collect student fee installments, issue receipts, financial audits |
+| **Accreditation Coordinator** | Quality Assurance (NAAC/NBA) | NAAC SSR Criteria 1-7 auto-sync, NBA Program Outcome & Course Outcome (CO-PO) matrix |
 
 ### Key Models (`main_app/models.py`)
 
@@ -494,7 +492,6 @@ Run through this checklist before opening your PR:
 
 **Dependencies**
 - [ ] If you added a new package, `requirements.txt` is updated
-- [ ] If using Conda, `college-erp.yml` is updated
 
 **Documentation**
 - [ ] New functions/classes have docstrings
@@ -552,7 +549,7 @@ Closes #issue_number
 ## 🐛 Issue Reporting
 
 Before opening a new issue, please
-[search existing issues](https://github.com/Ansarimajid/College-ERP/issues)
+[search existing issues](https://github.com/varshini200502/college-erp/issues)
 to avoid duplicates.
 
 ### Bug Reports
@@ -591,7 +588,7 @@ Anything else that might be relevant.
 ### Feature Requests
 
 For new features, **please start a
-[GitHub Discussion](https://github.com/Ansarimajid/College-ERP/discussions)
+[GitHub Discussion](https://github.com/varshini200502/college-erp/discussions)
 first** rather than opening an issue directly. This lets the community
 validate the idea before development begins. Check the
 [Roadmap](#-roadmap--priorities) — it may already be planned.
@@ -604,7 +601,7 @@ created and labeled `enhancement`.
 **Do NOT report security vulnerabilities in public issues.**
 
 If you discover a security vulnerability, please email
-**ansmajidali@gmail.com** directly with:
+**varshini200502@users.noreply.github.com** directly with:
 
 - A description of the vulnerability
 - Steps to reproduce it
@@ -835,11 +832,11 @@ class StudentModelTest(TestCase):
 
     def test_student_str_representation(self):
         """Student __str__ should return full name."""
-        self.user.first_name = "Majid"
-        self.user.last_name = "Ansari"
+        self.user.first_name = "Aarav"
+        self.user.last_name = "Sharma"
         self.user.save()
         student = Students.objects.get(admin=self.user)
-        self.assertEqual(str(student), "Majid Ansari")
+        self.assertEqual(str(student), "Aarav Sharma")
 
 
 class AdminLeaveApprovalTest(TestCase):
@@ -904,7 +901,7 @@ on the related issue before starting, to avoid duplicate work.
 | 🟢 Low | i18n / Hindi & Urdu language support | Medium | Django i18n, translation files |
 
 If you want to propose something not on this list, start a
-[Discussion](https://github.com/Ansarimajid/College-ERP/discussions) first.
+[Discussion](https://github.com/varshini200502/college-erp/discussions) first.
 
 ---
 
@@ -912,9 +909,9 @@ If you want to propose something not on this list, start a
 
 | Channel | Use for |
 |---------|---------|
-| [GitHub Discussions](https://github.com/Ansarimajid/College-ERP/discussions) | Feature ideas, setup questions, general conversation |
-| [GitHub Issues](https://github.com/Ansarimajid/College-ERP/issues) | Confirmed bugs and approved feature requests only |
-| [Email](mailto:ansmajidali@gmail.com) | Security vulnerabilities, Code of Conduct reports |
+| [GitHub Discussions](https://github.com/varshini200502/college-erp/discussions) | Feature ideas, setup questions, general conversation |
+| [GitHub Issues](https://github.com/varshini200502/college-erp/issues) | Confirmed bugs and approved feature requests only |
+| [Email](mailto:varshini200502@users.noreply.github.com) | Security vulnerabilities, Code of Conduct reports |
 
 **Response times:**
 - GitHub Discussions: within 24–48 hours
@@ -928,7 +925,7 @@ If you want to propose something not on this list, start a
 All contributors are recognized in the following ways:
 
 - Listed as a contributor in GitHub's
-  [Contributors graph](https://github.com/Ansarimajid/College-ERP/graphs/contributors)
+  [Contributors graph](https://github.com/varshini200502/college-erp/graphs/contributors)
 - Significant contributions are acknowledged in release notes
 - First-time contributors receive a personal thank-you comment on their
   merged PR
@@ -946,6 +943,6 @@ code · documentation · tests · bug reports · feature ideas · community supp
 around the world.*
 
 ⭐ If this project has been useful to you, consider
-[starring the repository](https://github.com/Ansarimajid/College-ERP)!
+[starring the repository](https://github.com/varshini200502/college-erp)!
 
 </div>

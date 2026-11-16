@@ -33,7 +33,7 @@ We actively maintain and release security patches for the following versions:
 
 > **Recommendation:** Always run the latest release. Older versions may contain
 > unpatched vulnerabilities. Check the
-> [Releases page](https://github.com/Ansarimajid/College-ERP/releases) for
+> [Releases page](https://github.com/varshini200502/college-erp/releases) for
 > the most current version.
 
 ---
@@ -46,9 +46,11 @@ puts all users of this software at risk.
 
 ### How to report
 
-Send a detailed email to:
+Please submit a private vulnerability report via:
 
-**📧 ansmajidali@gmail.com**
+**[GitHub Security Advisories](https://github.com/varshini200502/college-erp/security/advisories)**  
+or contact the maintainer directly at:  
+**📧 varshini200502@users.noreply.github.com**
 
 Use the subject line:
 ```
@@ -91,7 +93,7 @@ Please provide as much of the following as possible:
 ### Encryption (optional)
 
 If your report contains highly sensitive details, you may request our PGP
-public key before sending by emailing ansmajidali@gmail.com with the subject
+public key before sending by contacting varshini200502@users.noreply.github.com with the subject
 `[PGP KEY REQUEST]`.
 
 ---
@@ -133,7 +135,7 @@ We follow **Coordinated Vulnerability Disclosure (CVD)**:
 - Avoid accessing, modifying, or deleting data that does not belong to you
   during testing.
 - Limit testing to environments you own or have explicit permission to test.
-  Do **not** test against the live demo at `syncx.pythonanywhere.com` in ways
+  Do **not** run destructive attacks against production demo instances in ways
   that could affect other users.
 
 **We commit to:**
@@ -321,8 +323,8 @@ AXES_COOLOFF_TIME = 1              # Hours before lockout expires
 ### HTTPS & Headers
 
 Always deploy behind HTTPS. Use a valid TLS certificate (free options:
-Let's Encrypt via Certbot). If using PythonAnywhere, HTTPS is handled
-automatically on custom domains.
+Let's Encrypt via Certbot). When deploying on Render or modern cloud platforms,
+HTTPS is managed automatically with managed TLS certificates.
 
 Add a Content Security Policy (CSP) header to mitigate XSS. Using
 `django-csp`:
@@ -417,7 +419,7 @@ The following are known limitations that deployers should be aware of:
 
 | Item | Details | Mitigation |
 |------|---------|------------|
-| **SQLite in development** | `db.sqlite3` is committed to the repo for development convenience. It contains demo data only — no real student records. | Switch to PostgreSQL before any production use. Delete `db.sqlite3` from production. |
+| **SQLite in development** | `db.sqlite3` is untracked and excluded in `.gitignore` for development convenience. It contains demo data only — no real student records. | Switch to managed PostgreSQL (e.g. Neon) with SSL for all production deployments. |
 | **Demo credentials in README** | The live demo credentials (studentone@student.com / staffone@staff.com) are public for evaluation purposes. | These are for the demo environment only. Never use these credentials in a real deployment. |
 | **`DEBUG = True` in dev** | The development `settings.py` has `DEBUG = True` which exposes stack traces. | This is intentional for local development. Always set `DEBUG = False` in production. |
 | **No rate limiting by default** | The login form does not have rate limiting out of the box, making it vulnerable to brute-force. | Add `django-axes` as described above before production deployment. |
@@ -461,18 +463,15 @@ listed here with your name/handle and the nature of the finding.
 
 | Purpose | Contact |
 |---------|---------|
-| Security vulnerabilities | ansmajidali@gmail.com (**private — use for security only**) |
-| General bugs | [GitHub Issues](https://github.com/Ansarimajid/College-ERP/issues) |
-| Questions & ideas | [GitHub Discussions](https://github.com/Ansarimajid/College-ERP/discussions) |
-| LinkedIn | [ansmajidali](https://www.linkedin.com/in/ansmajidali) |
+| Security vulnerabilities | [GitHub Security Advisories](https://github.com/varshini200502/college-erp/security/advisories) or varshini200502@users.noreply.github.com |
+| General bugs | [GitHub Issues](https://github.com/varshini200502/college-erp/issues) |
+| Questions & ideas | [GitHub Discussions](https://github.com/varshini200502/college-erp/discussions) |
 
 ---
 
 <div align="center">
 
-*This security policy is reviewed and updated with each major release.*
-*Last updated: v2.0.0 — February 2026*
-
-**Majid Ali Ansari** · [GitHub](https://github.com/Ansarimajid) · [ansmajidali@gmail.com](mailto:ansmajidali@gmail.com)
+*This security policy is reviewed and updated with each major release.*  
+*Maintained by Varshini* · [GitHub](https://github.com/varshini200502)
 
 </div>
