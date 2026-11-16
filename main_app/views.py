@@ -1,4 +1,5 @@
 import json
+import os
 import requests
 from django.conf import settings
 from django.contrib import messages
@@ -26,7 +27,10 @@ def get_role_home_url(user_type):
 def login_page(request):
     if request.user.is_authenticated:
         return redirect(get_role_home_url(request.user.user_type))
-    return render(request, 'main_app/login.html')
+    context = {
+        'recaptcha_site_key': getattr(settings, 'RECAPTCHA_SITE_KEY', '') or os.environ.get('RECAPTCHA_SITE_KEY', ''),
+    }
+    return render(request, 'main_app/login.html', context)
 
 
 def doLogin(request, **kwargs):
@@ -49,7 +53,7 @@ def doLogin(request, **kwargs):
         return redirect('/')
 
     captcha_url = getattr(settings, 'RECAPTCHA_VERIFY_URL', "https://www.google.com/recaptcha/api/siteverify")
-    captcha_key = getattr(settings, 'RECAPTCHA_SECRET_KEY', "6LfTGD4qAAAAALtlli02bIM2MGi_V0cUYrmzGEGd")
+    captcha_key = getattr(settings, 'RECAPTCHA_SECRET_KEY', "") or os.environ.get('RECAPTCHA_SECRET_KEY', "")
 
     is_captcha_valid = False
     captcha_error_msg = "Invalid CAPTCHA response. Please try again."

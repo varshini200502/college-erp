@@ -45,8 +45,8 @@ if EXTRA_CSRF:
     CSRF_TRUSTED_ORIGINS.extend([c.strip() for c in EXTRA_CSRF.split(',') if c.strip()])
 
 # Google reCAPTCHA Configuration
-RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '6LfTGD4qAAAAALtlli02bIM2MGi_V0cUYrmzGEGd')
-RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY', '6LfTGD4qAAAAAJLKy1TGJY7uuTh_T1cB5VikRWjF')
+RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '')
+RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY', '')
 RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
 RECAPTCHA_TEST_TOKENS = [
     'VALID_DEMO_CAPTCHA_TOKEN_AICTE_2026',
@@ -96,6 +96,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'main_app.context_processors.recaptcha_context',
             ],
         },
     },
