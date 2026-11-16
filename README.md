@@ -2,16 +2,53 @@
 
 An enterprise-grade, multi-role Academic & Institutional Resource Planning (ERP) platform built with Python, Django, and PostgreSQL. Designed to streamline academic administration, faculty workload, student tracking, finance ledgers, and accreditation compliance within higher education institutions.
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-college--erp--xwqr.onrender.com-success?style=for-the-badge&logo=render&logoColor=white)](https://college-erp-xwqr.onrender.com)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-3.1.1-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon%20Serverless-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-[![Hosting](https://img.shields.io/badge/Render-Deployment%20Ready-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com/)
+[![Hosting](https://img.shields.io/badge/Hosting-Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+---
+
+## 🌐 Live Demo
+
+The application is deployed and publicly accessible for evaluation:
+
+* **Live Application:** [https://college-erp-xwqr.onrender.com](https://college-erp-xwqr.onrender.com)
+* **Hosting:** [Render](https://render.com/) (Web Service)
+* **Database:** [Neon Serverless PostgreSQL](https://neon.tech/)
+
+> [!NOTE]
+> **Important Evaluation Notes:**
+> * **Cold Start Delay:** Because this deployment runs on Render's free tier, the web service automatically spins down after periods of inactivity. If the service is asleep, the first request may take approximately **45–60 seconds** to wake up. Subsequent requests will respond normally.
+> * **Demo Data & Sandbox Environment:** This project is intended solely for demonstration and evaluation purposes. Demo data may be periodically modified, refreshed, or reset.
+> * **Security & Privacy:** The provided demo accounts are shared publicly. **Please do not enter real personal, confidential, or sensitive institutional information.**
+
+---
+
+## 🔑 Demo Login Credentials
+
+You can test each of the six role dashboards using the following pre-configured demo accounts:
+
+| Role | Email | Password | Landing Dashboard |
+| :--- | :--- | :--- | :--- |
+| **Admin** | [admin@admin.com](mailto:admin@admin.com) | `admin123` | `/admin/home/` |
+| **Principal** | [principal@college.edu](mailto:principal@college.edu) | `principal123` | `/principal/home/` |
+| **Faculty** | [dr.sharma@college.edu](mailto:dr.sharma@college.edu) | `faculty123` | `/staff/home/` |
+| **Student** | [aryan.kapoor@student.edu](mailto:aryan.kapoor@student.edu) | `student123` | `/student/home/` |
+| **Finance Officer** | [finance@college.edu](mailto:finance@college.edu) | `finance123` | `/finance/home/` |
+| **Accreditation Coordinator** | [accreditation@college.edu](mailto:accreditation@college.edu) | `accreditation123` | `/accreditation/home/` |
+
+> [!IMPORTANT]
+> These are shared demo credentials intended for evaluation and testing. Please ensure you solve the interactive Google reCAPTCHA checkbox on the login page when signing in.
 
 ---
 
 ## 📑 Table of Contents
 
+- [Live Demo](#-live-demo)
+- [Demo Login Credentials](#-demo-login-credentials)
 - [1. Project Overview](#1-project-overview)
 - [2. Problem Statement](#2-problem-statement)
 - [3. Objectives](#3-objectives)
@@ -24,10 +61,9 @@ An enterprise-grade, multi-role Academic & Institutional Resource Planning (ERP)
 - [10. Local Development Setup (Windows)](#10-local-development-setup-windows)
 - [11. Environment Variable Configuration](#11-environment-variable-configuration)
 - [12. Deployment Architecture (Render + Neon)](#12-deployment-architecture-render--neon)
-- [13. Verified Demo Accounts](#13-verified-demo-accounts)
-- [14. Automated Testing & Verification](#14-automated-testing--verification)
-- [15. Future Enhancements](#15-future-enhancements)
-- [16. License & Attribution](#16-license--attribution)
+- [13. Automated Testing & Verification](#13-automated-testing--verification)
+- [14. Future Enhancements](#14-future-enhancements)
+- [15. License & Attribution](#15-license--attribution)
 
 ---
 
@@ -52,7 +88,7 @@ Higher education institutions often suffer from fragmented software silos:
 
 * **Role Isolation:** Provide dedicated interfaces for six institutional roles without data leaks.
 * **Academic Integrity:** Enforce non-destructive student progression and prevent tampering of finalized marks.
-* **Financial Precision:** Automate fee ledger calculations (Net Fee = Total Fee - Scholarship - Concession) with instantaneous balance recalculation and downloadable binary PDF receipts.
+* **Financial Precision:** Automate fee ledger calculations (`Net Fee = Total Fee - Scholarship - Concession`) with instantaneous balance recalculation and downloadable binary PDF receipts.
 * **Accreditation Readiness:** Automatically aggregate academic metrics for NAAC (Criteria 1–7) and NBA Program Outcomes (POs) / Course Outcomes (COs).
 * **Alumni Continuity:** Transition graduating students into a searchable Alumni Registry rather than deleting historical records.
 * **Production Resilience:** Support zero-downtime serverless database hosting (Neon PostgreSQL) and containerized deployment (Render) with complete local development fallback.
@@ -156,11 +192,11 @@ The application implements strict role-based access control across **six primary
 ## 7. Technology Stack
 
 * **Backend:** Python 3.11.9, Django 3.1.1
-* **Database:** PostgreSQL (Neon Serverless via `psycopg2-binary`) with SQLite for offline local development
+* **Database:** PostgreSQL (Neon Serverless via `psycopg2-binary`) with SQLite fallback for offline local development
 * **Application Server:** Gunicorn 20.0.4
 * **Static Assets:** WhiteNoise 5.2.0 (Gzip & Manifest Caching)
 * **PDF Generation:** Pure-Python PDF 1.4 stream generator (`pdf_generator.py`)
-* **Security & Auth:** Django Auth System, CSRF protection, Google reCAPTCHA v2 with institutional test token fallbacks
+* **Security & Auth:** Django Auth System, CSRF protection, Google reCAPTCHA v2 with institutional test token support
 * **Frontend:** Bootstrap 4, AdminLTE 3, FontAwesome 5, jQuery, DataTables
 
 ---
@@ -197,6 +233,7 @@ College_ERP/
 ├── college_management_system/
 │   ├── __init__.py
 │   ├── asgi.py
+│   ├── context_processors.py       # Global context processors (reCAPTCHA)
 │   ├── settings.py                 # Dual-mode production & local settings
 │   ├── urls.py                     # Root URL routing
 │   └── wsgi.py                     # WSGI entrypoint for Gunicorn
@@ -212,6 +249,7 @@ College_ERP/
 │   │   ├── staff_template/         # Faculty attendance & marks
 │   │   └── student_template/       # Student portal & fee views
 │   ├── admin.py
+│   ├── EmailBackend.py             # Case-insensitive email authentication backend
 │   ├── forms.py                    # Extended student & staff forms
 │   ├── middleware.py               # RBAC & login enforcement middleware
 │   ├── models.py                   # Complete institutional data model
@@ -269,6 +307,7 @@ College_ERP/
 
 5. **Populate demo data (Optional):**
    ```powershell
+   python seed_system.py
    python seed_demo_data.py
    ```
 
@@ -323,17 +362,19 @@ EMAIL_HOST_PASSWORD=your-email-app-password
    * **Branch:** `main`
    * **Build Command:**
      ```bash
-     pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate
+     ./render-build.sh
      ```
    * **Start Command:**
      ```bash
      gunicorn college_management_system.wsgi:application
      ```
    * **Instance Type:** `Free`
-5. Under **Environment Variables**, add:
+5. Under **Environment Variables**, configure:
    * `DATABASE_URL`: *(Your Neon PostgreSQL connection string)*
    * `SECRET_KEY`: *(A strong random 50+ character string)*
    * `DEBUG`: `False`
+   * `RECAPTCHA_SITE_KEY`: *(Your Google reCAPTCHA v2 site key)*
+   * `RECAPTCHA_SECRET_KEY`: *(Your Google reCAPTCHA v2 secret key)*
    * `PYTHON_VERSION`: `3.11.9`
 6. Click **Create Web Service**.
 
@@ -345,22 +386,7 @@ EMAIL_HOST_PASSWORD=your-email-app-password
 
 ---
 
-## 13. Verified Demo Accounts
-
-The project includes an idempotent demo seeder (`seed_demo_data.py`) configured with safe, fictional institutional accounts for testing all six roles:
-
-| Role | Username / Email | Password | Landing Page |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@admin.com` | `admin123` | `/admin/home/` |
-| **Principal** | `principal@college.edu` | `principal123` | `/principal/home/` |
-| **Faculty / Staff** | `dr.sharma@college.edu` | `faculty123` | `/staff/home/` |
-| **Student** | `aryan.kapoor@student.edu` | `student123` | `/student/home/` |
-| **Finance Officer** | `finance@college.edu` | `finance123` | `/finance/home/` |
-| **Accreditation Coordinator** | `accreditation@college.edu` | `accreditation123` | `/accreditation/home/` |
-
----
-
-## 14. Automated Testing & Verification
+## 13. Automated Testing & Verification
 
 The repository includes an automated integration and RBAC test suite (`verify_all_roles.py`).
 
@@ -386,7 +412,7 @@ python verify_all_roles.py
 
 ---
 
-## 15. Future Enhancements
+## 14. Future Enhancements
 
 Features planned for future iterations:
 - [ ] Integration with cloud object storage (AWS S3 or Cloudinary) for persistent user uploads on serverless hosting.
@@ -396,7 +422,7 @@ Features planned for future iterations:
 
 ---
 
-## 16. License & Attribution
+## 15. License & Attribution
 
 This project is open-source software licensed under the **[MIT License](LICENSE)**.
 
