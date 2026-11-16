@@ -1,0 +1,104 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Consolidated Financial Reports{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'finance_home' %}">Finance</a></li>
+    <li class="breadcrumb-item active">Financial Reports</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #198754 !important;">
+            <small class="text-muted text-uppercase fw-bold">Total Inflow</small>
+            <h3 class="text-success mt-1">₹{{ total_income }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #dc3545 !important;">
+            <small class="text-muted text-uppercase fw-bold">Total Outflow</small>
+            <h3 class="text-danger mt-1">₹{{ total_expenses }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #0d6efd !important;">
+            <small class="text-muted text-uppercase fw-bold">Net Operating Balance</small>
+            <h3 class="text-primary mt-1">₹{{ net_surplus }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #ffc107 !important;">
+            <small class="text-muted text-uppercase fw-bold">Outstanding Dues</small>
+            <h3 class="text-warning mt-1">₹{{ total_outstanding }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Category-wise Expenditure -->
+    <div class="col-lg-6 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-tags me-2 text-danger"></i> Expenditures by Category</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-end">Total Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr>
+                                <td>{{ cat.category }}</td>
+                                <td class="text-end fw-bold text-danger">₹{{ cat.total }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="2" class="text-center text-muted py-3">No expenses recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department-wise Fee Collection -->
+    <div class="col-lg-6 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-graduation-cap me-2 text-primary"></i> Fee Collection by Department</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Department</th>
+                                <th class="text-end">Collected (₹)</th>
+                                <th class="text-end">Pending Dues (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for df in dept_fees %}
+                            <tr>
+                                <td><strong>{{ df.student__course__name|default:"General" }}</strong></td>
+                                <td class="text-end text-success fw-bold">₹{{ df.collected|default:0.0 }}</td>
+                                <td class="text-end text-danger fw-bold">₹{{ df.due|default:0.0 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">No fee account records available.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

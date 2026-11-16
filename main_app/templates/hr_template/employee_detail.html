@@ -1,0 +1,121 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Employee Record: {{ staff }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'hr_home' %}">HR</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'employee_list' %}">Employees</a></li>
+    <li class="breadcrumb-item active">{{ staff }}</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Card & Leave Quota -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card mb-4 text-center">
+            <div class="card-body">
+                <img src="{{ staff.admin.profile_pic }}" alt="Avatar" class="rounded-circle mb-3 border shadow-sm" style="width: 100px; height: 100px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name={{ staff.admin.first_name }}+{{ staff.admin.last_name }}&background=0b3574&color=fff'">
+                <h5>{{ staff.admin.first_name }} {{ staff.admin.last_name }}</h5>
+                <p class="text-muted mb-1">{{ staff.designation }} - {{ staff.course.name }}</p>
+                <span class="badge bg-primary mb-2">ID: {{ emp_record.employee_id }}</span>
+            </div>
+        </div>
+
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h6 class="card-title mb-0"><i class="fas fa-calendar-check me-2 text-success"></i> Leave Balances (2024-25)</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Casual Leave:</span>
+                    <strong>{{ leave_quota.casual_leave_remaining }} / {{ leave_quota.casual_leave_total }} remaining</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Medical Leave:</span>
+                    <strong>{{ leave_quota.medical_leave_remaining }} / {{ leave_quota.medical_leave_total }} remaining</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Duty Leave:</span>
+                    <strong>{{ leave_quota.duty_leave_remaining }} / {{ leave_quota.duty_leave_total }} remaining</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Employee Details Form -->
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Employment & Statutory Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_record">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Designation</label>
+                            <input type="text" name="designation" class="form-control form-control-sm" value="{{ staff.designation }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Employment Status</label>
+                            <select name="employment_status" class="form-select form-select-sm">
+                                <option value="Active" {% if staff.employment_status == 'Active' %}selected{% endif %}>Active</option>
+                                <option value="On Leave" {% if staff.employment_status == 'On Leave' %}selected{% endif %}>On Leave</option>
+                                <option value="Resigned" {% if staff.employment_status == 'Resigned' %}selected{% endif %}>Resigned</option>
+                                <option value="Retired" {% if staff.employment_status == 'Retired' %}selected{% endif %}>Retired</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Employment Type</label>
+                            <select name="employment_type" class="form-select form-select-sm">
+                                <option value="Permanent" {% if emp_record.employment_type == 'Permanent' %}selected{% endif %}>Permanent / Regular</option>
+                                <option value="Contract" {% if emp_record.employment_type == 'Contract' %}selected{% endif %}>Contractual</option>
+                                <option value="Visiting" {% if emp_record.employment_type == 'Visiting' %}selected{% endif %}>Visiting / Adjunct</option>
+                                <option value="Ad-hoc" {% if emp_record.employment_type == 'Ad-hoc' %}selected{% endif %}>Ad-hoc</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Date of Joining</label>
+                            <input type="date" name="date_of_joining" class="form-control form-control-sm" value="{{ staff.date_of_joining|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">PAN Number</label>
+                            <input type="text" name="pan_number" class="form-control form-control-sm" value="{{ emp_record.pan_number|default:'' }}" placeholder="ABCDE1234F">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Aadhaar Number</label>
+                            <input type="text" name="aadhaar_number" class="form-control form-control-sm" value="{{ emp_record.aadhaar_number|default:'' }}" placeholder="12-digit UID">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Highest Qualification</label>
+                            <input type="text" name="highest_qualification" class="form-control form-control-sm" value="{{ staff.highest_qualification|default:'' }}" placeholder="Ph.D, M.Tech...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Total Experience (Years)</label>
+                            <input type="number" step="0.1" name="total_experience_years" class="form-control form-control-sm" value="{{ staff.total_experience_years }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Area of Specialization</label>
+                        <input type="text" name="specialization" class="form-control form-control-sm" value="{{ staff.specialization|default:'' }}" placeholder="e.g. Artificial Intelligence, VLSI, Power Systems">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i> Save Employee Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

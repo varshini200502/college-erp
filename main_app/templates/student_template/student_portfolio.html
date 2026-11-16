@@ -1,0 +1,193 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}My Achievements, Internships & Placements{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'student_home' %}">Student</a></li>
+    <li class="breadcrumb-item active">Achievements Portfolio</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Log New Achievement Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="card-title text-white mb-0"><i class="fas fa-plus me-1"></i> Log Achievement / Certification</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_achievement">
+                    <div class="mb-2">
+                        <label class="form-label small">Category</label>
+                        <select name="category" class="form-select form-select-sm">
+                            <option value="Certification">Technical Certification</option>
+                            <option value="Internship">Internship</option>
+                            <option value="Hackathon">Hackathon</option>
+                            <option value="Paper">Research Paper</option>
+                            <option value="Competition">Technical Competition</option>
+                            <option value="Extracurricular">Extracurricular Achievement</option>
+                            <option value="Project">Capstone / Project</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Title *</label>
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. AWS Certified Developer" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Event / Organization</label>
+                        <input type="text" name="organization" class="form-control form-control-sm" placeholder="e.g. Amazon Web Services">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Date</label>
+                            <input type="date" name="date" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Academic Year</label>
+                            <input type="text" name="academic_year" class="form-control form-control-sm" value="2024-2025">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Certificate File</label>
+                        <input type="file" name="certificate" class="form-control form-control-sm">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Save Achievement</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Log Placement Form -->
+        <div class="erpnext-card">
+            <div class="card-header bg-success text-white">
+                <h6 class="card-title text-white mb-0"><i class="fas fa-briefcase me-1"></i> Log Placement / Higher Studies</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_placement">
+                    <div class="mb-2">
+                        <label class="form-label small">Company / Employer *</label>
+                        <input type="text" name="company_name" class="form-control form-control-sm" placeholder="e.g. Google, Infosys" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Designation</label>
+                        <input type="text" name="designation" class="form-control form-control-sm" value="Associate Software Engineer">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Package (LPA)</label>
+                            <input type="number" step="0.1" name="package_lpa" class="form-control form-control-sm" value="6.5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Offer Date</label>
+                            <input type="date" name="offer_date" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Offer Letter File</label>
+                        <input type="file" name="offer_letter" class="form-control form-control-sm">
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm w-100">Submit Placement Info</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements & Placements Tables -->
+    <div class="col-lg-8 mb-4">
+        <!-- Achievements Table -->
+        <div class="erpnext-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-trophy text-warning me-2"></i> My Recorded Achievements ({{ achievements.count }})</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th>Title & Org</th>
+                                <th>Date</th>
+                                <th>Certificate</th>
+                                <th>Verification</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in achievements %}
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">{{ a.category }}</span></td>
+                                <td>
+                                    <strong>{{ a.title }}</strong>
+                                    {% if a.organization %}<div class="text-muted small">{{ a.organization }}</div>{% endif %}
+                                </td>
+                                <td>{{ a.date|default:"-" }}</td>
+                                <td>
+                                    {% if a.certificate %}
+                                    <a href="{{ a.certificate.url }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2">View</a>
+                                    {% else %}
+                                    <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if a.is_verified %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">No achievements logged yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placements Table -->
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-building text-success me-2"></i> Placement & Higher Studies Record</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Company / Institution</th>
+                                <th>Designation</th>
+                                <th>Package (LPA)</th>
+                                <th>Offer Date</th>
+                                <th>Offer Letter</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in placements %}
+                            <tr>
+                                <td><strong>{{ p.company_name }}</strong></td>
+                                <td>{{ p.designation }}</td>
+                                <td class="text-success fw-bold">₹{{ p.package_lpa }} LPA</td>
+                                <td>{{ p.offer_date|default:"-" }}</td>
+                                <td>
+                                    {% if p.offer_letter %}
+                                    <a href="{{ p.offer_letter.url }}" target="_blank" class="btn btn-xs btn-outline-success py-0 px-2">Document</a>
+                                    {% else %}
+                                    <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">No placement records logged.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

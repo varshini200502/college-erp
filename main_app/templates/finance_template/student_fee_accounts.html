@@ -1,0 +1,92 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Student Fee Accounts{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'finance_home' %}">Finance</a></li>
+    <li class="breadcrumb-item active">Fee Accounts</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="erpnext-card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Department</label>
+                <select name="course" class="form-select form-select-sm">
+                    <option value="">All Departments</option>
+                    {% for c in courses %}
+                    <option value="{{ c.id }}" {% if selected_course == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Payment Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="Paid" {% if selected_status == 'Paid' %}selected{% endif %}>Paid</option>
+                    <option value="Partially Paid" {% if selected_status == 'Partially Paid' %}selected{% endif %}>Partially Paid</option>
+                    <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Overdue" {% if selected_status == 'Overdue' %}selected{% endif %}>Overdue</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary me-2"><i class="fas fa-filter me-1"></i> Filter</button>
+                <a href="{% url 'student_fee_accounts' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="erpnext-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Student Fee Ledgers ({{ accounts.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>Structure Assigned</th>
+                        <th>Net Fee</th>
+                        <th>Paid Amount</th>
+                        <th>Outstanding Due</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for acc in accounts %}
+                    <tr>
+                        <td>
+                            <strong>{{ acc.student.admin.first_name }} {{ acc.student.admin.last_name }}</strong>
+                            <div class="text-muted small">{{ acc.student.admin.email }}</div>
+                        </td>
+                        <td>{{ acc.student.course.name }}</td>
+                        <td>{{ acc.fee_structure.name|default:"<span class='text-danger'>Unassigned</span>" }}</td>
+                        <td>₹{{ acc.net_fee }}</td>
+                        <td class="text-success fw-bold">₹{{ acc.paid_amount }}</td>
+                        <td class="text-danger fw-bold">₹{{ acc.due_amount }}</td>
+                        <td>
+                            <span class="badge {% if acc.status == 'Paid' %}bg-success{% elif acc.status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                {{ acc.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'student_fee_detail' acc.id %}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                <i class="fas fa-cash-register me-1"></i> Collect / View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No student fee accounts found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -2,6 +2,8 @@ import json
 import requests
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
+from django.db import models as django_models
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import (HttpResponse, HttpResponseRedirect,
                               get_object_or_404, redirect, render)
@@ -98,24 +100,50 @@ def add_staff(request):
             gender = form.cleaned_data.get('gender')
             password = form.cleaned_data.get('password')
             course = form.cleaned_data.get('course')
+            # Extended staff fields
+            faculty_id = form.cleaned_data.get('faculty_id') or ''
+            designation = form.cleaned_data.get('designation') or 'Assistant Professor'
+            department = form.cleaned_data.get('department') or ''
+            date_of_joining = form.cleaned_data.get('date_of_joining')
+            employment_status = form.cleaned_data.get('employment_status') or 'Active'
+            total_experience_years = form.cleaned_data.get('total_experience_years') or 0.0
+            highest_qualification = form.cleaned_data.get('highest_qualification') or ''
+            specialization = form.cleaned_data.get('specialization') or ''
+
             passport = request.FILES.get('profile_pic')
-            fs = FileSystemStorage()
-            filename = fs.save(passport.name, passport)
-            passport_url = fs.url(filename)
+            passport_url = ''
+            if passport:
+                fs = FileSystemStorage()
+                filename = fs.save(passport.name, passport)
+                passport_url = fs.url(filename)
             try:
                 user = CustomUser.objects.create_user(
-                    email=email, password=password, user_type=2, first_name=first_name, last_name=last_name, profile_pic=passport_url)
+                    email=email, password=password, user_type=2,
+                    first_name=first_name, last_name=last_name,
+                    profile_pic=passport_url)
                 user.gender = gender
                 user.address = address
-                user.staff.course = course
                 user.save()
-                messages.success(request, "Successfully Added")
+                # Update the auto-created Staff profile
+                staff_obj = user.staff
+                staff_obj.course = course
+                staff_obj.faculty_id = faculty_id
+                staff_obj.designation = designation
+                staff_obj.department = department
+                if date_of_joining:
+                    staff_obj.date_of_joining = date_of_joining
+                staff_obj.employment_status = employment_status
+                staff_obj.total_experience_years = total_experience_years
+                staff_obj.highest_qualification = highest_qualification
+                staff_obj.specialization = specialization
+                staff_obj.save()
+                messages.success(request, f"Faculty '{first_name} {last_name}' added successfully!")
                 return redirect(reverse('add_staff'))
 
             except Exception as e:
-                messages.error(request, "Could Not Add " + str(e))
+                messages.error(request, "Could Not Add: " + str(e))
         else:
-            messages.error(request, "Please fulfil all requirements")
+            messages.error(request, "Please fulfil all required fields correctly.")
 
     return render(request, 'hod_template/add_staff_template.html', context)
 
@@ -133,24 +161,52 @@ def add_student(request):
             password = student_form.cleaned_data.get('password')
             course = student_form.cleaned_data.get('course')
             session = student_form.cleaned_data.get('session')
-            passport = request.FILES['profile_pic']
-            fs = FileSystemStorage()
-            filename = fs.save(passport.name, passport)
-            passport_url = fs.url(filename)
+            # Extended student fields
+            roll_number = student_form.cleaned_data.get('roll_number') or ''
+            admission_number = student_form.cleaned_data.get('admission_number') or ''
+            date_of_birth = student_form.cleaned_data.get('date_of_birth')
+            phone = student_form.cleaned_data.get('phone') or ''
+            parent_name = student_form.cleaned_data.get('parent_name') or ''
+            parent_phone = student_form.cleaned_data.get('parent_phone') or ''
+            current_semester = student_form.cleaned_data.get('current_semester') or 1
+            section = student_form.cleaned_data.get('section') or 'A'
+            status = student_form.cleaned_data.get('status') or 'Active'
+
+            passport = request.FILES.get('profile_pic')
+            passport_url = ''
+            if passport:
+                fs = FileSystemStorage()
+                filename = fs.save(passport.name, passport)
+                passport_url = fs.url(filename)
             try:
                 user = CustomUser.objects.create_user(
-                    email=email, password=password, user_type=3, first_name=first_name, last_name=last_name, profile_pic=passport_url)
+                    email=email, password=password, user_type=3,
+                    first_name=first_name, last_name=last_name,
+                    profile_pic=passport_url)
                 user.gender = gender
                 user.address = address
-                user.student.session = session
-                user.student.course = course
                 user.save()
-                messages.success(request, "Successfully Added")
+                # Update the auto-created Student profile
+                student_obj = user.student
+                student_obj.session = session
+                student_obj.course = course
+                student_obj.roll_number = roll_number
+                student_obj.admission_number = admission_number
+                if date_of_birth:
+                    student_obj.date_of_birth = date_of_birth
+                student_obj.phone = phone
+                student_obj.parent_name = parent_name
+                student_obj.parent_phone = parent_phone
+                student_obj.current_semester = current_semester
+                student_obj.section = section
+                student_obj.status = status
+                student_obj.save()
+                messages.success(request, f"Student '{first_name} {last_name}' added successfully!")
                 return redirect(reverse('add_student'))
             except Exception as e:
                 messages.error(request, "Could Not Add: " + str(e))
         else:
-            messages.error(request, "Could Not Add: ")
+            messages.error(request, "Please fill all required fields correctly.")
     return render(request, 'hod_template/add_student_template.html', context)
 
 
@@ -205,19 +261,75 @@ def add_subject(request):
 
 
 def manage_staff(request):
-    allStaff = CustomUser.objects.filter(user_type=2)
+    query = request.GET.get('q', '')
+    course_filter = request.GET.get('course', '')
+    status_filter = request.GET.get('status', '')
+
+    allStaff = CustomUser.objects.filter(user_type=2).select_related('staff', 'staff__course')
+    if query:
+        allStaff = allStaff.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(staff__faculty_id__icontains=query)
+        )
+    if course_filter:
+        allStaff = allStaff.filter(staff__course__id=course_filter)
+    if status_filter:
+        allStaff = allStaff.filter(staff__employment_status=status_filter)
+
+    courses = Course.objects.all()
     context = {
         'allStaff': allStaff,
-        'page_title': 'Manage Staff'
+        'courses': courses,
+        'page_title': 'Manage Faculty',
+        'query': query,
+        'course_filter': course_filter,
+        'status_filter': status_filter,
+        'employment_statuses': Staff.EMPLOYMENT_STATUS,
     }
     return render(request, "hod_template/manage_staff.html", context)
 
 
 def manage_student(request):
-    students = CustomUser.objects.filter(user_type=3)
+    query = request.GET.get('q', '')
+    course_filter = request.GET.get('course', '')
+    session_filter = request.GET.get('session', '')
+    status_filter = request.GET.get('status', '')
+    semester_filter = request.GET.get('semester', '')
+
+    students = CustomUser.objects.filter(user_type=3).select_related('student', 'student__course', 'student__session')
+    if query:
+        students = students.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(student__roll_number__icontains=query) |
+            Q(student__admission_number__icontains=query)
+        )
+    if course_filter:
+        students = students.filter(student__course__id=course_filter)
+    if session_filter:
+        students = students.filter(student__session__id=session_filter)
+    if status_filter:
+        students = students.filter(student__status=status_filter)
+    if semester_filter:
+        students = students.filter(student__current_semester=semester_filter)
+
+    courses = Course.objects.all()
+    sessions = Session.objects.all()
     context = {
         'students': students,
-        'page_title': 'Manage Students'
+        'courses': courses,
+        'sessions': sessions,
+        'page_title': 'Manage Students',
+        'query': query,
+        'course_filter': course_filter,
+        'session_filter': session_filter,
+        'status_filter': status_filter,
+        'semester_filter': semester_filter,
+        'status_choices': Student.STATUS_CHOICES,
+        'semesters': range(1, 9),
     }
     return render(request, "hod_template/manage_student.html", context)
 
@@ -253,19 +365,27 @@ def edit_staff(request, staff_id):
             first_name = form.cleaned_data.get('first_name')
             last_name = form.cleaned_data.get('last_name')
             address = form.cleaned_data.get('address')
-            username = form.cleaned_data.get('username')
             email = form.cleaned_data.get('email')
             gender = form.cleaned_data.get('gender')
             password = form.cleaned_data.get('password') or None
             course = form.cleaned_data.get('course')
+            # Extended staff fields
+            faculty_id = form.cleaned_data.get('faculty_id') or staff.faculty_id
+            designation = form.cleaned_data.get('designation') or staff.designation
+            department = form.cleaned_data.get('department') or staff.department
+            date_of_joining = form.cleaned_data.get('date_of_joining') or staff.date_of_joining
+            employment_status = form.cleaned_data.get('employment_status') or staff.employment_status
+            total_experience_years = form.cleaned_data.get('total_experience_years')
+            highest_qualification = form.cleaned_data.get('highest_qualification') or staff.highest_qualification
+            specialization = form.cleaned_data.get('specialization') or staff.specialization
+
             passport = request.FILES.get('profile_pic') or None
             try:
                 user = CustomUser.objects.get(id=staff.admin.id)
-                user.username = username
                 user.email = email
-                if password != None:
+                if password is not None:
                     user.set_password(password)
-                if passport != None:
+                if passport is not None:
                     fs = FileSystemStorage()
                     filename = fs.save(passport.name, passport)
                     passport_url = fs.url(filename)
@@ -274,19 +394,27 @@ def edit_staff(request, staff_id):
                 user.last_name = last_name
                 user.gender = gender
                 user.address = address
-                staff.course = course
                 user.save()
+                # Save extended staff fields
+                staff.course = course
+                staff.faculty_id = faculty_id
+                staff.designation = designation
+                staff.department = department
+                if date_of_joining:
+                    staff.date_of_joining = date_of_joining
+                staff.employment_status = employment_status
+                if total_experience_years is not None:
+                    staff.total_experience_years = total_experience_years
+                staff.highest_qualification = highest_qualification
+                staff.specialization = specialization
                 staff.save()
-                messages.success(request, "Successfully Updated")
+                messages.success(request, "Staff profile updated successfully!")
                 return redirect(reverse('edit_staff', args=[staff_id]))
             except Exception as e:
-                messages.error(request, "Could Not Update " + str(e))
+                messages.error(request, "Could Not Update: " + str(e))
         else:
-            messages.error(request, "Please fil form properly")
-    else:
-        user = CustomUser.objects.get(id=staff_id)
-        staff = Staff.objects.get(id=user.id)
-        return render(request, "hod_template/edit_staff_template.html", context)
+            messages.error(request, "Please fill the form properly.")
+    return render(request, "hod_template/edit_staff_template.html", context)
 
 
 def edit_student(request, student_id):
@@ -302,40 +430,60 @@ def edit_student(request, student_id):
             first_name = form.cleaned_data.get('first_name')
             last_name = form.cleaned_data.get('last_name')
             address = form.cleaned_data.get('address')
-            username = form.cleaned_data.get('username')
             email = form.cleaned_data.get('email')
             gender = form.cleaned_data.get('gender')
             password = form.cleaned_data.get('password') or None
             course = form.cleaned_data.get('course')
             session = form.cleaned_data.get('session')
+            # Extended student fields
+            roll_number = form.cleaned_data.get('roll_number') or student.roll_number
+            admission_number = form.cleaned_data.get('admission_number') or student.admission_number
+            date_of_birth = form.cleaned_data.get('date_of_birth') or student.date_of_birth
+            phone = form.cleaned_data.get('phone') or student.phone
+            parent_name = form.cleaned_data.get('parent_name') or student.parent_name
+            parent_phone = form.cleaned_data.get('parent_phone') or student.parent_phone
+            current_semester = form.cleaned_data.get('current_semester') or student.current_semester
+            section = form.cleaned_data.get('section') or student.section
+            status = form.cleaned_data.get('status') or student.status
+
             passport = request.FILES.get('profile_pic') or None
             try:
                 user = CustomUser.objects.get(id=student.admin.id)
-                if passport != None:
+                if passport is not None:
                     fs = FileSystemStorage()
                     filename = fs.save(passport.name, passport)
                     passport_url = fs.url(filename)
                     user.profile_pic = passport_url
-                user.username = username
                 user.email = email
-                if password != None:
+                if password is not None:
                     user.set_password(password)
                 user.first_name = first_name
                 user.last_name = last_name
-                student.session = session
                 user.gender = gender
                 user.address = address
-                student.course = course
                 user.save()
+                # Save extended student fields
+                student.session = session
+                student.course = course
+                student.roll_number = roll_number
+                student.admission_number = admission_number
+                if date_of_birth:
+                    student.date_of_birth = date_of_birth
+                student.phone = phone
+                student.parent_name = parent_name
+                student.parent_phone = parent_phone
+                if current_semester:
+                    student.current_semester = current_semester
+                student.section = section
+                student.status = status
                 student.save()
-                messages.success(request, "Successfully Updated")
+                messages.success(request, "Student profile updated successfully!")
                 return redirect(reverse('edit_student', args=[student_id]))
             except Exception as e:
-                messages.error(request, "Could Not Update " + str(e))
+                messages.error(request, "Could Not Update: " + str(e))
         else:
             messages.error(request, "Please Fill Form Properly!")
-    else:
-        return render(request, "hod_template/edit_student_template.html", context)
+    return render(request, "hod_template/edit_student_template.html", context)
 
 
 def edit_course(request, course_id):
@@ -683,17 +831,138 @@ def send_staff_notification(request):
 
 
 def delete_staff(request, staff_id):
-    staff = get_object_or_404(CustomUser, staff__id=staff_id)
-    staff.delete()
-    messages.success(request, "Staff deleted successfully!")
+    staff_obj = get_object_or_404(Staff, id=staff_id)
+    # Prefer deactivation over destructive deletion to preserve historical institutional records
+    staff_obj.employment_status = 'Resigned'
+    staff_obj.admin.is_active = False
+    staff_obj.admin.save()
+    staff_obj.save()
+    messages.success(request, f"Staff record for {staff_obj} deactivated (marked Resigned)!")
     return redirect(reverse('manage_staff'))
 
 
 def delete_student(request, student_id):
-    student = get_object_or_404(CustomUser, student__id=student_id)
-    student.delete()
-    messages.success(request, "Student deleted successfully!")
+    student_obj = get_object_or_404(Student, id=student_id)
+    # Prefer deactivation over destructive deletion to preserve academic/fee records
+    student_obj.status = 'Inactive'
+    student_obj.admin.is_active = False
+    student_obj.admin.save()
+    student_obj.save()
+    messages.success(request, f"Student record for {student_obj} deactivated (marked Inactive)!")
     return redirect(reverse('manage_student'))
+
+
+def toggle_student_status(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+    new_status = request.POST.get('status', 'Active')
+    student.status = new_status
+    if new_status in ['Active']:
+        student.admin.is_active = True
+    else:
+        # Graduated, Alumni, or Inactive
+        student.admin.is_active = True if new_status in ['Graduated', 'Alumni'] else False
+    student.admin.save()
+    student.save()
+    messages.success(request, f"Student status for {student} set to {new_status}.")
+    return redirect(reverse('manage_student'))
+
+
+def toggle_staff_status(request, staff_id):
+    staff = get_object_or_404(Staff, id=staff_id)
+    new_status = request.POST.get('employment_status', 'Active')
+    staff.employment_status = new_status
+    staff.admin.is_active = (new_status in ['Active', 'On Leave'])
+    staff.admin.save()
+    staff.save()
+    messages.success(request, f"Staff status for {staff} set to {new_status}.")
+    return redirect(reverse('manage_staff'))
+
+
+def institutional_documents(request):
+    documents = InstitutionalDocument.objects.all().order_by('-created_at')
+    courses = Course.objects.all()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'upload_document':
+            title = request.POST.get('title')
+            category = request.POST.get('category')
+            dept_id = request.POST.get('department')
+            acad_year = request.POST.get('academic_year', '2024-2025')
+            doc_file = request.FILES.get('file')
+
+            dept = Course.objects.filter(id=dept_id).first() if dept_id else None
+            InstitutionalDocument.objects.create(
+                title=title,
+                category=category,
+                department=dept,
+                academic_year=acad_year,
+                file=doc_file,
+                uploaded_by=request.user
+            )
+            SystemAuditLog.objects.create(
+                user=request.user,
+                action="DOCUMENT_UPLOAD",
+                module="DocumentManagement",
+                description=f"Uploaded institutional document: [{category}] {title}",
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+            messages.success(request, f"Document '{title}' uploaded successfully!")
+            return redirect(reverse('institutional_documents'))
+
+    context = {
+        'page_title': 'Institutional Document Repository',
+        'documents': documents,
+        'courses': courses,
+    }
+    return render(request, 'hod_template/institutional_documents.html', context)
+
+
+def verify_institutional_document(request, doc_id):
+    doc = get_object_or_404(InstitutionalDocument, id=doc_id)
+    decision = request.POST.get('decision') == 'true'
+    doc.is_verified = decision
+    doc.verified_by = request.user if decision else None
+    doc.save()
+    status_str = "Verified" if decision else "Pending Verification"
+    messages.success(request, f"Document '{doc.title}' marked as {status_str}.")
+    return redirect(reverse('institutional_documents'))
+
+
+def system_audit_logs(request):
+    logs = SystemAuditLog.objects.all().order_by('-timestamp')[:100]
+    context = {
+        'page_title': 'System Audit Trails & Security Logs',
+        'logs': logs,
+    }
+    return render(request, 'hod_template/system_audit_logs.html', context)
+
+
+def centralized_reports(request):
+    total_students = Student.objects.filter(status='Active').count()
+    alumni_students = Student.objects.filter(status__in=['Graduated', 'Alumni']).count()
+    total_faculty = Staff.objects.filter(employment_status='Active').count()
+    courses = Course.objects.all()
+
+    dept_summary = []
+    for c in courses:
+        s_count = Student.objects.filter(course=c, status='Active').count()
+        f_count = Staff.objects.filter(course=c, employment_status='Active').count()
+        dept_summary.append({
+            'course': c,
+            'students': s_count,
+            'faculty': f_count,
+            'sfr': round(s_count / f_count, 1) if f_count > 0 else 0
+        })
+
+    context = {
+        'page_title': 'Centralized Institutional Analytics & Reporting',
+        'total_students': total_students,
+        'alumni_students': alumni_students,
+        'total_faculty': total_faculty,
+        'dept_summary': dept_summary,
+    }
+    return render(request, 'hod_template/centralized_reports.html', context)
 
 
 def delete_course(request, course_id):
@@ -723,3 +992,159 @@ def delete_session(request, session_id):
         messages.error(
             request, "There are students assigned to this session. Please move them to another session.")
     return redirect(reverse('manage_session'))
+
+
+
+# ============================================================
+# ALUMNI MANAGEMENT VIEWS
+# ============================================================
+
+def graduate_student(request, student_id):
+    """Mark a student as Graduated and create/update their AlumniProfile."""
+    student = get_object_or_404(Student, id=student_id)
+    if request.method == 'POST':
+        graduation_year = request.POST.get('graduation_year', 2024)
+        degree_awarded = request.POST.get('degree_awarded', 'Bachelor of Technology')
+        current_company = request.POST.get('current_company', '')
+        current_designation = request.POST.get('current_designation', '')
+        current_city = request.POST.get('current_city', '')
+        higher_education_institution = request.POST.get('higher_education_institution', '')
+        higher_education_degree = request.POST.get('higher_education_degree', '')
+        linkedin_url = request.POST.get('linkedin_url', '') or None
+        engagement_notes = request.POST.get('engagement_notes', '')
+        is_notable = request.POST.get('is_notable') == 'on'
+
+        # Update student status
+        student.status = 'Alumni'
+        student.admin.is_active = True  # Keep alumni account active for reference
+        student.admin.save()
+        student.save()
+
+        # Create or update AlumniProfile
+        alumni, created = AlumniProfile.objects.get_or_create(student=student)
+        alumni.graduation_year = int(graduation_year)
+        alumni.degree_awarded = degree_awarded
+        alumni.current_company = current_company
+        alumni.current_designation = current_designation
+        alumni.current_city = current_city
+        alumni.higher_education_institution = higher_education_institution
+        alumni.higher_education_degree = higher_education_degree
+        alumni.linkedin_url = linkedin_url
+        alumni.engagement_notes = engagement_notes
+        alumni.is_notable = is_notable
+        alumni.save()
+
+        SystemAuditLog.objects.create(
+            user=request.user,
+            action="STUDENT_GRADUATED",
+            module="AlumniManagement",
+            description=f"Student {student} (ID:{student.id}) graduated. Alumni profile {'created' if created else 'updated'}.",
+            ip_address=request.META.get('REMOTE_ADDR')
+        )
+
+        action = 'created' if created else 'updated'
+        messages.success(request, f"Student '{student}' has been graduated and alumni profile {action}!")
+        return redirect(reverse('alumni_list'))
+    else:
+        # Show graduation form
+        context = {
+            'student': student,
+            'page_title': f'Graduate Student: {student}',
+            'current_year': __import__('datetime').date.today().year,
+        }
+        return render(request, 'hod_template/graduate_student.html', context)
+
+
+def alumni_list(request):
+    """List all alumni with search and filter."""
+    query = request.GET.get('q', '')
+    year_filter = request.GET.get('year', '')
+    course_filter = request.GET.get('course', '')
+    notable_filter = request.GET.get('notable', '')
+
+    alumni_profiles = AlumniProfile.objects.select_related(
+        'student', 'student__admin', 'student__course'
+    ).order_by('-graduation_year', 'student__admin__last_name')
+
+    if query:
+        alumni_profiles = alumni_profiles.filter(
+            Q(student__admin__first_name__icontains=query) |
+            Q(student__admin__last_name__icontains=query) |
+            Q(student__admin__email__icontains=query) |
+            Q(current_company__icontains=query) |
+            Q(current_designation__icontains=query) |
+            Q(student__roll_number__icontains=query)
+        )
+    if year_filter:
+        alumni_profiles = alumni_profiles.filter(graduation_year=year_filter)
+    if course_filter:
+        alumni_profiles = alumni_profiles.filter(student__course__id=course_filter)
+    if notable_filter == '1':
+        alumni_profiles = alumni_profiles.filter(is_notable=True)
+
+    # Also show Graduated students without AlumniProfile
+    graduated_without_profile = Student.objects.filter(
+        status__in=['Graduated', 'Alumni']
+    ).exclude(id__in=AlumniProfile.objects.values_list('student__id', flat=True))
+
+    courses = Course.objects.all()
+    years = AlumniProfile.objects.values_list('graduation_year', flat=True).distinct().order_by('-graduation_year')
+
+    context = {
+        'alumni_profiles': alumni_profiles,
+        'graduated_without_profile': graduated_without_profile,
+        'courses': courses,
+        'years': years,
+        'page_title': 'Alumni Management',
+        'query': query,
+        'year_filter': year_filter,
+        'course_filter': course_filter,
+        'notable_filter': notable_filter,
+        'total_alumni': alumni_profiles.count(),
+    }
+    return render(request, 'hod_template/alumni_list.html', context)
+
+
+def alumni_detail(request, alumni_id):
+    """View and update detailed alumni profile."""
+    alumni = get_object_or_404(AlumniProfile, id=alumni_id)
+    student = alumni.student
+
+    if request.method == 'POST':
+        alumni.current_company = request.POST.get('current_company', '')
+        alumni.current_designation = request.POST.get('current_designation', '')
+        alumni.current_city = request.POST.get('current_city', '')
+        alumni.higher_education_institution = request.POST.get('higher_education_institution', '')
+        alumni.higher_education_degree = request.POST.get('higher_education_degree', '')
+        linkedin_url = request.POST.get('linkedin_url', '') or None
+        alumni.linkedin_url = linkedin_url
+        alumni.engagement_notes = request.POST.get('engagement_notes', '')
+        alumni.is_notable = request.POST.get('is_notable') == 'on'
+        alumni.degree_awarded = request.POST.get('degree_awarded', alumni.degree_awarded)
+        try:
+            alumni.graduation_year = int(request.POST.get('graduation_year', alumni.graduation_year))
+        except (ValueError, TypeError):
+            pass
+        alumni.save()
+        messages.success(request, "Alumni profile updated successfully!")
+        return redirect(reverse('alumni_detail', args=[alumni_id]))
+
+    # Gather academic history from StudentResult
+    results = StudentResult.objects.filter(student=student).select_related('subject')
+    # Attendance summary
+    attendance_reports = AttendanceReport.objects.filter(student=student)
+    total_classes = attendance_reports.count()
+    present_classes = attendance_reports.filter(status=True).count()
+    attendance_pct = round((present_classes / total_classes * 100), 1) if total_classes > 0 else 0
+
+    context = {
+        'alumni': alumni,
+        'student': student,
+        'results': results,
+        'total_classes': total_classes,
+        'present_classes': present_classes,
+        'attendance_pct': attendance_pct,
+        'page_title': f'Alumni Profile: {student}',
+        'current_year': __import__('datetime').date.today().year,
+    }
+    return render(request, 'hod_template/alumni_detail.html', context)

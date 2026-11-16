@@ -1,0 +1,103 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}My Fee Account & Receipts{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'student_home' %}">Student</a></li>
+    <li class="breadcrumb-item active">Fee Account</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Fee Account Status Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">Fee Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted text-uppercase fw-bold">Structure</small>
+                    <h6>{{ fee_account.fee_structure.name|default:"College Academic Fee" }}</h6>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total Structure Fee:</span>
+                    <strong>₹{{ fee_account.fee_structure.total_fee|default:0.0 }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Scholarships / Discounts:</span>
+                    <span class="text-success">- ₹{{ fee_account.scholarship_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Net Payable:</span>
+                    <strong>₹{{ fee_account.net_fee }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Paid Amount:</span>
+                    <span class="text-success fw-bold">₹{{ fee_account.paid_amount }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="h6 mb-0 text-danger">Pending Balance:</span>
+                    <span class="h5 mb-0 text-danger fw-bold">₹{{ fee_account.due_amount }}</span>
+                </div>
+                <div class="text-center">
+                    <span class="badge {% if fee_account.status == 'Paid' %}bg-success{% elif fee_account.status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6 px-3 py-2 w-100">
+                        Status: {{ fee_account.status }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Ledger & Receipts -->
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-receipt text-primary me-2"></i> Payment History & Downloadable Receipts</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Receipt #</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Status</th>
+                                <th>Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr class="{% if p.is_refunded %}table-secondary text-muted{% endif %}">
+                                <td><code>{{ p.receipt_number }}</code></td>
+                                <td>{{ p.payment_date }}</td>
+                                <td class="fw-bold {% if p.is_refunded %}text-decoration-line-through text-muted{% else %}text-success{% endif %}">₹{{ p.amount_paid }}</td>
+                                <td>{{ p.payment_mode }}</td>
+                                <td>
+                                    {% if p.is_refunded %}
+                                        <span class="badge bg-danger">Refunded</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Confirmed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'view_receipt' p.id %}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                        <i class="fas fa-file-pdf text-danger me-1"></i> Download Receipt
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No payments recorded on this account yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

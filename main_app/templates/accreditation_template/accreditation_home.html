@@ -1,0 +1,121 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Accreditation Management Center (NAAC & NBA){% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Accreditation Hub</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<!-- Institutional Aggregated Stats -->
+<div class="stats-grid mb-4">
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="fas fa-medal"></i>
+        </div>
+        <div class="stat-number" style="color: var(--warning-color);">{{ naac_pct }}%</div>
+        <p class="stat-label">NAAC Overall Readiness</p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fas fa-check-double"></i>
+        </div>
+        <div class="stat-number" style="color: var(--primary-color);">{{ verified_metrics }} / {{ total_metrics }}</div>
+        <p class="stat-label">Verified Metrics</p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="stat-number" style="color: #0dcaf0;">{{ sfr }}:1</div>
+        <p class="stat-label">Student-Teacher Ratio (SFR)</p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="fas fa-microscope"></i>
+        </div>
+        <div class="stat-number" style="color: var(--success-color);">{{ total_pubs }} Papers</div>
+        <p class="stat-label">Faculty Publications</p>
+    </div>
+</div>
+
+<!-- NAAC Criteria Section -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-university me-2 text-warning"></i> NAAC 7 Criteria Assessment Framework</h5>
+                <a href="{% url 'naac_report' %}" class="btn btn-sm btn-outline-warning"><i class="fas fa-file-alt me-1"></i> View Full SSR Data</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Criterion Title</th>
+                                <th>Weightage</th>
+                                <th>Data Completeness</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in criteria %}
+                            <tr>
+                                <td><span class="badge bg-secondary">C{{ c.criterion_number }}</span></td>
+                                <td>
+                                    <strong>{{ c.name }}</strong>
+                                    <div class="text-muted small">{{ c.description|truncatechars:70 }}</div>
+                                </td>
+                                <td>{{ c.weightage }} pts</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ c.metrics.count }} metrics recorded
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'naac_criterion_detail' c.id %}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                        <i class="fas fa-edit me-1"></i> Open Criterion
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">No criteria found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NBA Programs Section -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-bullseye me-2 text-primary"></i> NBA OBE Programs</h5>
+                <a href="{% url 'nba_programs_list' %}" class="btn btn-sm btn-outline-primary">Manage</a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for p in nba_programs %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ p.program_name }}</strong>
+                            <div class="text-muted small">{{ p.tier }} | {{ p.pos.count }} POs mapped</div>
+                        </div>
+                        <a href="{% url 'nba_program_detail' p.id %}" class="btn btn-xs btn-outline-secondary py-1 px-2">Details</a>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted">No NBA programs configured.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

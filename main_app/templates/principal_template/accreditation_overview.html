@@ -1,0 +1,60 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Accreditation Readiness Overview{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item active">Accreditation Readiness</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-7 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-certificate text-warning me-2"></i> NAAC 7-Criteria Completeness</h5>
+            </div>
+            <div class="card-body">
+                {% for cs in criteria_summary %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold">Criterion {{ cs.criterion.criterion_number }}: {{ cs.criterion.name }}</span>
+                        <span>{{ cs.verified_metrics }} / {{ cs.total_metrics }} Verified ({{ cs.completion_pct }}%)</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar {% if cs.completion_pct >= 75 %}bg-success{% elif cs.completion_pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+                             role="progressbar" style="width: {{ cs.completion_pct }}%;"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center">No criteria configured.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-bullseye text-primary me-2"></i> NBA OBE Engineering Programs</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for p in nba_programs %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ p.program_name }}</strong>
+                            <div class="text-muted small">Tier: {{ p.tier }} | Coordinator: {{ p.coordinator|default:"Unassigned" }}</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ p.pos.count }} POs</span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center">No NBA programs active.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,142 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-9">
+                <div class="card card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-graduation-cap"></i> Graduate Student: <strong>{{ student }}</strong>
+                        </h3>
+                        <div class="card-tools">
+                            <a href="{% url 'manage_student' %}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Students
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- Student summary -->
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> Student Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Name:</strong> {{ student }}<br>
+                                    <strong>Roll No:</strong> {{ student.roll_number|default:"—" }}<br>
+                                    <strong>Course:</strong> {{ student.course.name|default:"—" }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Admission Session:</strong> {{ student.session|default:"—" }}<br>
+                                    <strong>Semester:</strong> {{ student.current_semester }}<br>
+                                    <strong>Section:</strong> {{ student.section|default:"—" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Important:</strong> This action will mark the student as <strong>Alumni</strong>
+                            and create a permanent alumni record. The student login will remain active for reference.
+                            This action can be updated later from the Alumni registry.
+                        </div>
+
+                        <form method="POST" action="">
+                            {% csrf_token %}
+
+                            <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-certificate"></i> Graduation Details</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Graduation Year <span class="text-danger">*</span></label>
+                                        <input type="number" name="graduation_year" class="form-control" value="{{ current_year }}" min="1990" max="{{ current_year }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Degree Awarded <span class="text-danger">*</span></label>
+                                        <input type="text" name="degree_awarded" class="form-control"
+                                               value="{% if student.course %}Bachelor of Technology in {{ student.course.name }}{% else %}Bachelor of Technology{% endif %}" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="border-bottom pb-2 mb-3 mt-2"><i class="fas fa-briefcase"></i> Post-Graduation Details (Optional)</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Current Company / Organisation</label>
+                                        <input type="text" name="current_company" class="form-control" placeholder="Leave blank if unknown">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Designation / Role</label>
+                                        <input type="text" name="current_designation" class="form-control" placeholder="e.g. Software Engineer, Data Analyst">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Current City</label>
+                                        <input type="text" name="current_city" class="form-control" placeholder="City of residence">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>LinkedIn Profile URL</label>
+                                        <input type="url" name="linkedin_url" class="form-control" placeholder="https://linkedin.com/in/...">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="border-bottom pb-2 mb-3 mt-2"><i class="fas fa-university"></i> Higher Education (Optional)</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Higher Education Institution</label>
+                                        <input type="text" name="higher_education_institution" class="form-control" placeholder="e.g. IIT Bombay">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Degree / Programme</label>
+                                        <input type="text" name="higher_education_degree" class="form-control" placeholder="e.g. M.Tech CSE, MBA">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Engagement Notes</label>
+                                <textarea name="engagement_notes" class="form-control" rows="2" placeholder="Any notes about this graduate (achievements, awards, etc.)..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="is_notable" name="is_notable">
+                                    <label class="custom-control-label" for="is_notable">
+                                        <i class="fas fa-star text-warning"></i> Mark as <strong>Notable Alumni</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-graduation-cap"></i> Confirm Graduation & Create Alumni Profile
+                                </button>
+                                <a href="{% url 'manage_student' %}" class="btn btn-secondary btn-lg ml-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

@@ -1,0 +1,96 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Institutional Student Roster{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item active">Students</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="erpnext-card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Department / Course Filter</label>
+                <select name="course" class="form-select form-select-sm">
+                    <option value="">All Departments</option>
+                    {% for c in courses %}
+                        <option value="{{ c.id }}" {% if selected_course == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Student Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Graduated" {% if selected_status == 'Graduated' %}selected{% endif %}>Graduated</option>
+                    <option value="Alumni" {% if selected_status == 'Alumni' %}selected{% endif %}>Alumni</option>
+                    <option value="Inactive" {% if selected_status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary me-2"><i class="fas fa-filter me-1"></i> Filter</button>
+                <a href="{% url 'principal_students' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="erpnext-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Enrolled Students ({{ students.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Student Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Semester / Section</th>
+                        <th>Roll / Adm No</th>
+                        <th>Status</th>
+                        <th>Fee Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ s.admin.first_name }} {{ s.admin.last_name }}</strong>
+                        </td>
+                        <td>{{ s.admin.email }}</td>
+                        <td>{{ s.course.name }}</td>
+                        <td>Sem {{ s.current_semester }} - Sec {{ s.section }}</td>
+                        <td>{{ s.roll_number|default:"-" }}</td>
+                        <td>
+                            <span class="badge {% if s.status == 'Active' %}bg-success{% elif s.status == 'Graduated' %}bg-primary{% elif s.status == 'Alumni' %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ s.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if s.fee_account %}
+                                <span class="badge {% if s.fee_account.status == 'Paid' %}bg-success{% elif s.fee_account.status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                    {{ s.fee_account.status }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">No account</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">No student records found matching filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

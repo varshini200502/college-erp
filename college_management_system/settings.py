@@ -14,26 +14,46 @@ import dj_database_url
 import os
 from pathlib import Path
 
+os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'f2zx8*lb*em*-*b+!&1lpp&$_9q9kmkar+l3x90do@s(+sr&x7'  # Consider using your secret key
+SECRET_KEY = os.environ.get('SECRET_KEY', 'f2zx8*lb*em*-*b+!&1lpp&$_9q9kmkar+l3x90do@s(+sr&x7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Defaults to False if running on Render; defaults to True for local development
+DEBUG = os.environ.get('DEBUG', 'True' if 'RENDER' not in os.environ else 'False').lower() in ('true', '1', 'yes')
 
-# ALLOWED_HOSTS = ['smswithdjango.herokuapp.com']
-ALLOWED_HOSTS = ['*']  # Not recommended but useful in dev mode
+# Hostname and domain configuration
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver', '.onrender.com']
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+EXTRA_ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS')
+if EXTRA_ALLOWED_HOSTS:
+    ALLOWED_HOSTS.extend([h.strip() for h in EXTRA_ALLOWED_HOSTS.split(',') if h.strip()])
+
+# CSRF Trusted Origins for HTTPS on Render
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+EXTRA_CSRF = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if EXTRA_CSRF:
+    CSRF_TRUSTED_ORIGINS.extend([c.strip() for c in EXTRA_CSRF.split(',') if c.strip()])
+
+# Google reCAPTCHA Configuration
+RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '6LfTGD4qAAAAALtlli02bIM2MGi_V0cUYrmzGEGd')
+RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY', '6LfTGD4qAAAAAJLKy1TGJY7uuTh_T1cB5VikRWjF')
+RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
+RECAPTCHA_TEST_TOKENS = [
+    'VALID_DEMO_CAPTCHA_TOKEN_AICTE_2026',
+    '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+]
 
 # Application definition
-
 INSTALLED_APPS = [
     # Django Apps
     'django.contrib.admin',
@@ -56,7 +76,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    # Third Part Middleware
+    # Third Party Middleware (WhiteNoise serves static files directly)
     'whitenoise.middleware.WhiteNoiseMiddleware',
 
     # My Middleware
@@ -68,7 +88,7 @@ ROOT_URLCONF = 'college_management_system.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['main_app/templates'], #My App Templates
+        'DIRS': ['main_app/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -83,28 +103,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'college_management_system.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-
+# Database Configuration
+# Default: Local SQLite (kept untouched for local development)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': 'django',
-    #     'USER': os.environ.get('DB_USER'),
-    #     'PASSWORD': os.environ.get('DB_PASS'),
-    #     'HOST': '127.0.0.1',
-    #     'PORT': '3307'
-    # }
 }
 
+# Production: If DATABASE_URL is defined (Neon PostgreSQL), connect via dj_database_url with SSL
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES['default'] = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 # Password validation
-# https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 if not DEBUG:
     AUTH_PASSWORD_VALIDATORS = []
 else:
@@ -123,52 +140,67 @@ else:
         },
     ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/3.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.1/howto/static-files/
-
 STATIC_URL = '/static/'
-
-MEDIA_URL = '/media/'
-
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-AUTH_USER_MODEL = 'main_app.CustomUser'
-AUTHENTICATION_BACKENDS = ['main_app.EmailBackend.EmailBackend']
-TIME_ZONE = 'Asia/Kolkata'
-
-# Session Configuration for Remember Me functionality
-SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds (default)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # This will be overridden by remember me
-SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request to extend expiry
-
-# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-# EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_mails")
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-
-EMAIL_HOST_USER = os.environ.get('majidgt786@gmail.com') 
-EMAIL_HOST_PASSWORD = os.environ.get('sshswdwuwaokhghd')
-EMAIL_USE_TLS = True
-# DEFAULT_FROM_EMAIL = "School Management System <admin@admin.com>"
-
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-prod_db = dj_database_url.config(conn_max_age=500)
-DATABASES['default'].update(prod_db)
+# Media files (uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+AUTH_USER_MODEL = 'main_app.CustomUser'
+AUTHENTICATION_BACKENDS = ['main_app.EmailBackend.EmailBackend']
+
+# Session Configuration
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
+
+# HTTPS & Cookie Security (enforced in production when DEBUG is False)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() in ('true', '1')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+# Email Configuration (Reads from environment variables; no hardcoded credentials)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'College ERP <admin@college.edu>')
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} [{name}:{lineno}] {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+}

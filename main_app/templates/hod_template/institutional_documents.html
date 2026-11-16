@@ -1,0 +1,134 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Institutional Document Management{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'admin_home' %}">Admin</a></li>
+    <li class="breadcrumb-item active">Document Repository</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Upload Document Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title text-white mb-0"><i class="fas fa-file-upload me-2"></i> Upload Institutional Document</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="upload_document">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Document Title *</label>
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Academic Calendar 2024-25" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Category *</label>
+                        <select name="category" class="form-select form-select-sm" required>
+                            <option value="Academic Calendar">Academic Calendar</option>
+                            <option value="Syllabus">Curriculum / Syllabus</option>
+                            <option value="Student Certificate">Student Certificate</option>
+                            <option value="Faculty Qualification">Faculty Qualification</option>
+                            <option value="Research Paper">Research Paper</option>
+                            <option value="Training Certificate">Training Certificate</option>
+                            <option value="Financial Receipt">Financial Receipt</option>
+                            <option value="Accreditation Evidence">Accreditation Evidence</option>
+                            <option value="Meeting Minutes">Meeting Minutes</option>
+                            <option value="Policy Document">Institutional Policy</option>
+                            <option value="Other">Other Document</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Department</label>
+                            <select name="department" class="form-select form-select-sm">
+                                <option value="">General College</option>
+                                {% for c in courses %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Academic Year</label>
+                            <input type="text" name="academic_year" class="form-control form-control-sm" value="2024-2025">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select File *</label>
+                        <input type="file" name="file" class="form-control form-control-sm" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-upload me-1"></i> Upload to Repository</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Repository Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Centralized Document Repository ({{ documents.count }})</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Department / Year</th>
+                                <th>Uploaded By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td>
+                                    <strong>{{ doc.title }}</strong>
+                                    <div class="text-muted small">{{ doc.created_at|date:"M d, Y" }}</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ doc.category }}</span></td>
+                                <td>{{ doc.department.name|default:"College" }} ({{ doc.academic_year }})</td>
+                                <td><small>{{ doc.uploaded_by|default:"Admin" }}</small></td>
+                                <td>
+                                    {% if doc.is_verified %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'verify_institutional_document' doc.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        {% if not doc.is_verified %}
+                                            <input type="hidden" name="decision" value="true">
+                                            <button type="submit" class="btn btn-sm btn-success py-0 px-2" title="Verify Document">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% else %}
+                                            <input type="hidden" name="decision" value="false">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Revoke Verification">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No documents uploaded in repository yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

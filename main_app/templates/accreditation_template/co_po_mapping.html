@@ -1,0 +1,165 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}CO-PO Mapping & Attainment Matrix: {{ subject.name }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'accreditation_home' %}">Accreditation</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'nba_programs_list' %}">NBA Programs</a></li>
+    <li class="breadcrumb-item active">{{ subject.name }} CO-PO</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Define Course Outcome Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="card-title text-white mb-0"><i class="fas fa-plus-circle me-1"></i> Define Course Outcome (CO)</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_co">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">CO Code *</label>
+                        <input type="text" name="code" class="form-control form-control-sm" placeholder="e.g. CO1" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Description / Competency *</label>
+                        <textarea name="description" class="form-control form-control-sm" rows="3" placeholder="Describe the measurable capability acquired by students upon completion..." required></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small">Target Score (%)</label>
+                            <input type="number" step="1" name="target_percentage" class="form-control form-control-sm" value="60">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Attainment Threshold (%)</label>
+                            <input type="number" step="1" name="attainment_target_students_percentage" class="form-control form-control-sm" value="70">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Add Course Outcome</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Attainment Calculator Engine Trigger -->
+        <div class="erpnext-card border-0 shadow-sm" style="background: linear-gradient(135deg, #0b3574 0%, #125eeb 100%); color: #fff;">
+            <div class="card-body">
+                <h6 class="fw-bold mb-2"><i class="fas fa-calculator me-1"></i> Automated Attainment Engine</h6>
+                <p class="small opacity-75 mb-3">Computes direct attainment from student assessment marks in the database and indirect course-end feedback to determine NBA attainment levels (0 to 3 scale).</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="calculate_attainment">
+                    <button type="submit" class="btn btn-light btn-sm text-primary fw-bold w-100">
+                        <i class="fas fa-play me-1"></i> Compute Attainment Now
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CO-PO Mapping Matrix Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-table text-primary me-2"></i> CO-PO Correlation Matrix</h5>
+                <small class="text-muted">Correlation: 3-High, 2-Medium, 1-Low, 0-None</small>
+            </div>
+            <div class="card-body p-0">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_mapping">
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 12%;">CO Code</th>
+                                    {% for po in pos %}
+                                    <th style="min-width: 55px;" title="{{ po.title }}">{{ po.code }}</th>
+                                    {% endfor %}
+                                    {% for pso in psos %}
+                                    <th style="min-width: 55px;" class="table-info" title="{{ pso.title }}">{{ pso.code }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for co in cos %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">{{ co.code }}</strong>
+                                    </td>
+                                    {% for po in pos %}
+                                    <td>
+                                        <input type="number" min="0" max="3" name="map_po_{{ co.id }}_{{ po.id }}" class="form-control form-control-sm text-center px-1" value="{% for m in co.mappings.all %}{% if m.po.id == po.id %}{{ m.correlation_level }}{% endif %}{% endfor %}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                    {% for pso in psos %}
+                                    <td class="table-info">
+                                        <input type="number" min="0" max="3" name="map_pso_{{ co.id }}_{{ pso.id }}" class="form-control form-control-sm text-center px-1" value="{% for m in co.mappings.all %}{% if m.pso.id == pso.id %}{{ m.correlation_level }}{% endif %}{% endfor %}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="15" class="text-center text-muted py-4">No Course Outcomes defined for this subject yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if cos %}
+                    <div class="p-3 bg-light text-end">
+                        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-save me-1"></i> Save CO-PO Matrix</button>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Calculated Attainment Records Table -->
+        <div class="erpnext-card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="fas fa-poll text-success me-2"></i> Computed CO Attainment (NBA Scale 0 - 3.0)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Course Outcome</th>
+                                <th>Direct Attainment (80%)</th>
+                                <th>Indirect Attainment (20%)</th>
+                                <th>Overall Attainment Level</th>
+                                <th>Target Achieved</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in attainments %}
+                            <tr>
+                                <td><strong>{{ a.course_outcome.code }}</strong>: {{ a.course_outcome.description|truncatechars:45 }}</td>
+                                <td>{{ a.direct_attainment }} / 3.0</td>
+                                <td>{{ a.indirect_attainment }} / 3.0</td>
+                                <td><span class="badge bg-primary fs-6">{{ a.overall_attainment }}</span></td>
+                                <td>
+                                    {% if a.target_achieved %}
+                                        <span class="badge bg-success">Yes - Target Met</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">No - Action Required</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">No attainment calculations run yet. Click "Compute Attainment Now" above.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

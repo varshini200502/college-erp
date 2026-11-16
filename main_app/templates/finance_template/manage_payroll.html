@@ -1,0 +1,137 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Staff Payroll Management{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'finance_home' %}">Finance</a></li>
+    <li class="breadcrumb-item active">Staff Payroll</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Generate Payslip Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-file-invoice-dollar text-primary me-2"></i> Prepare Monthly Payslip</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_payslip">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Select Employee *</label>
+                        <select name="employee" class="form-select form-select-sm" required>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.first_name }} {{ emp.last_name }} ({{ emp.role_name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Month *</label>
+                            <select name="month" class="form-select form-select-sm">
+                                {% for m in months %}
+                                <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>Month {{ m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Year *</label>
+                            <input type="number" name="year" class="form-control form-control-sm" value="{{ selected_year }}">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Basic Salary (₹) *</label>
+                            <input type="number" step="0.01" name="basic_salary" class="form-control form-control-sm" value="50000.0" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">HRA (₹)</label>
+                            <input type="number" step="0.01" name="hra" class="form-control form-control-sm" value="15000.0">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small">Allowances (₹)</label>
+                            <input type="number" step="0.01" name="allowances" class="form-control form-control-sm" value="5000.0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Deductions / PF (₹)</label>
+                            <input type="number" step="0.01" name="deductions" class="form-control form-control-sm" value="3000.0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Calculate & Save Payslip</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payroll Records Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Payroll for Month {{ selected_month }}/{{ selected_year }}</h5>
+                <form method="GET" class="d-flex gap-2">
+                    <select name="month" class="form-select form-select-sm">
+                        {% for m in months %}
+                        <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>M{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" name="year" class="form-control form-control-sm" style="width: 90px;" value="{{ selected_year }}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Go</button>
+                </form>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Payslip Ref</th>
+                                <th>Employee</th>
+                                <th>Basic + HRA</th>
+                                <th>Net Salary</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pr in payrolls %}
+                            <tr>
+                                <td><code>{{ pr.payslip_reference }}</code></td>
+                                <td>
+                                    <strong>{{ pr.employee.first_name }} {{ pr.employee.last_name }}</strong>
+                                    <div class="text-muted small">{{ pr.employee.role_name }}</div>
+                                </td>
+                                <td>₹{{ pr.basic_salary }} + ₹{{ pr.hra }}</td>
+                                <td class="text-success fw-bold fs-6">₹{{ pr.net_salary }}</td>
+                                <td>
+                                    <span class="badge {% if pr.status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                        {{ pr.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if pr.status != 'Paid' %}
+                                    <form method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="mark_paid">
+                                        <input type="hidden" name="payroll_id" value="{{ pr.id }}">
+                                        <button type="submit" class="btn btn-xs btn-success py-0 px-2">Mark Paid</button>
+                                    </form>
+                                    {% else %}
+                                    <small class="text-muted">{{ pr.payment_date }}</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No payslips prepared for this month.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

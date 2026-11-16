@@ -1,111 +1,207 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
 {% block content %}
-
-<section class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <!-- general form elements -->
-                    <form method="POST">
-                        {% csrf_token %}
-                <div class="card card-dark">
-                    <div class="card-header">
-                        <h3 class="card-title">{{page_title}}</h3>
-                    </div>
-
-       
-                    <!-- /.card-header -->
-                    <!-- form start -->
-                    <div class="card-body">
-
-
-                        <div class="form-group">
-                            <label>Subject</label>
-                            <select name="subject" class="form-control" id='subject'>
-                                <option value="">----</option>
-                                {% for subject in subjects  %}
-                                <option value="{{subject.id}}">{{subject.name}}</option>
+<div class="row">
+    <div class="col-md-12">
+        <div class="erpnext-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-file-signature text-primary me-2"></i> Comprehensive Marks & Assessment Entry</h5>
+                <div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btn_finalize" style="display: none;" onclick="confirmFinalize()">
+                        <i class="fas fa-lock me-1"></i> Finalize Subject Marks
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="marks_entry_form">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold">Assigned Subject <span class="text-danger">*</span></label>
+                            <select name="subject" class="form-select form-control" id="subject" required>
+                                <option value="">-- Select Subject --</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.id }}">{{ subject.name }} ({{ subject.course.name }})</option>
                                 {% endfor %}
                             </select>
                         </div>
-
-
-                        <div class="form-group">
-                            <label>Session Year</label>
-                            <select name="session" id='session' class="form-control">
-                                <option value="">----</option>
-                                {% for session in sessions  %}
-                                <option value="{{session.id}}">{{session}} </option>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold">Academic Session <span class="text-danger">*</span></label>
+                            <select name="session" id="session" class="form-select form-control" required>
+                                <option value="">-- Select Session --</option>
+                                {% for session in sessions %}
+                                <option value="{{ session.id }}">{{ session }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-
-
                     </div>
-                    <!-- /.card-body -->
 
-                    <div class="card-footer">
-                        <button type="button" id='fetch_student' class="btn btn-primary btn-block">Fetch
-                            Students</button>
-                        <div class="form-group" id="student_data">
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="button" id="fetch_student" class="btn btn-primary">
+                            <i class="fas fa-users me-1"></i> Fetch Students in Subject
+                        </button>
+                    </div>
 
+                    <!-- Dynamic Student & Marks Container -->
+                    <div id="student_marks_container" style="display: none;">
+                        <div class="alert alert-info py-2" id="finalized_notice" style="display: none;">
+                            <i class="fas fa-info-circle me-1"></i> <strong>Note:</strong> This student's marks have been <strong>Finalized</strong>. Changes will be audited.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold">Select Student <span class="text-danger">*</span></label>
+                            <select class="form-select form-control" name="student_list" id="student_list" required>
+                                <option value="">-- Choose Student --</option>
+                            </select>
+                        </div>
+
+                        <div class="card p-3 bg-light mb-3">
+                            <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-calculator me-1"></i> 5-Component Assessment Breakdown</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small">Internal Test (Max 40)</label>
+                                    <input type="number" step="0.5" min="0" max="40" class="form-control mark-input" name="test" id="test_score" placeholder="0 - 40" required value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Assignment / Quiz (Max 20)</label>
+                                    <input type="number" step="0.5" min="0" max="20" class="form-control mark-input" name="assignment" id="assignment_score" placeholder="0 - 20" required value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Practical Lab (Max 30)</label>
+                                    <input type="number" step="0.5" min="0" max="30" class="form-control mark-input" name="practical" id="practical_score" placeholder="0 - 30" required value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Project / Presentation (Max 50)</label>
+                                    <input type="number" step="0.5" min="0" max="50" class="form-control mark-input" name="project" id="project_score" placeholder="0 - 50" required value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Semester Exam (Max 60)</label>
+                                    <input type="number" step="0.5" min="0" max="60" class="form-control mark-input" name="exam" id="exam_score" placeholder="0 - 60" required value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Calculated Total</label>
+                                    <input type="text" class="form-control bg-white font-weight-bold" id="total_preview" readonly value="0.0">
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="form-label small font-weight-bold">Reason for Entry / Revision (Audit Trail) <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="reason" id="correction_reason" placeholder="e.g. Regular Assessment Entry, Retest adjustment, Re-evaluation" required value="Regular Assessment Entry">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success" id="btn_save_marks">
+                                <i class="fas fa-save me-1"></i> Save Student Marks
+                            </button>
                         </div>
                     </div>
                 </form>
-                </div>
-                <!-- /.card -->
-
             </div>
         </div>
     </div>
-</section>
+</div>
 {% endblock content %}
-
 
 {% block custom_js %}
 <script>
-    $(document).ready(function () {
+    function updateTotal() {
+        var test = parseFloat($("#test_score").val()) || 0;
+        var assignment = parseFloat($("#assignment_score").val()) || 0;
+        var practical = parseFloat($("#practical_score").val()) || 0;
+        var project = parseFloat($("#project_score").val()) || 0;
+        var exam = parseFloat($("#exam_score").val()) || 0;
+        var total = test + assignment + practical + project + exam;
+        $("#total_preview").val(total.toFixed(1));
+    }
 
-       
-        $("#fetch_student").click(function () {
-            var subject = $("#subject").val()
-            var session = $("#session").val()
-            $("#student_data").html(null)
-if (subject.length  == 0 || session.length == 0){
-    alert("Please select session and subject");
-    return false;
-}
-            $.ajax({
-                url: "{% url 'get_students' %}",
-                type: 'POST',
-                data: {
-                    subject: subject,
-                    session: session
-                }
-            }).done(function (response) {
-                var json_data = JSON.parse(response)
-                if (json_data.length < 1) {
-                    alert("No data to display")
-                } else {
-                    var div_data = "<hr/><div class='form-group'> <label> Student List</label> <select class='student_list form-control' name='student_list'> "
+    $(".mark-input").on('input change', function() {
+        updateTotal();
+    });
 
-                    for (key in json_data) {
-                        div_data += "<option value='" + json_data[key]['id'] + "'>" + json_data[key]['name'] + " </option>"
-                    }
-                    div_data += "</select></div>"
-                    div_data += "<div class='form-group row'> <div class='col-md-6'> <label> Test Score </label> <input class='form-control' name='test' placeholder='Test Score' max='40' min='0' required type='number' /></div><div class='col-md-6'><label> Exam Score </label>  <input class='form-control' placeholder='Exam Score'  name='exam' max='60' min='0' required type='number' /> </div></div><div class='form-group'><button id='save_attendance' class='btn btn-success' type='submit'>Save Result</button></div></div>"
-                    $("#student_data").html(div_data)
-                }
-            }).fail(function (response) {
-                alert("Error in fetching students")
-            })
+    $("#fetch_student").click(function () {
+        var subject = $("#subject").val();
+        var session = $("#session").val();
+        if (!subject || !session) {
+            alert("Please select both Subject and Session.");
+            return false;
+        }
 
+        $("#btn_finalize").show();
 
+        $.ajax({
+            url: "{% url 'get_students' %}",
+            type: 'POST',
+            data: {
+                subject: subject,
+                session: session
+            }
+        }).done(function (response) {
+            var students = typeof response === 'string' ? JSON.parse(response) : response;
+            if (students.length === 0) {
+                alert("No active students found in this course/session.");
+                $("#student_marks_container").hide();
+                return;
+            }
 
+            var opts = "<option value=''>-- Choose Student --</option>";
+            for (var i = 0; i < students.length; i++) {
+                opts += "<option value='" + students[i].id + "'>" + students[i].name + "</option>";
+            }
+            $("#student_list").html(opts);
+            $("#student_marks_container").slideDown();
+        }).fail(function () {
+            alert("Error fetching students from server.");
+        });
+    });
 
-        })
-    })
+    $("#student_list").change(function () {
+        var studentId = $(this).val();
+        var subjectId = $("#subject").val();
+        if (!studentId || !subjectId) return;
+
+        $.ajax({
+            url: "{% url 'fetch_student_result' %}",
+            type: 'POST',
+            data: {
+                student: studentId,
+                subject: subjectId
+            }
+        }).done(function (data) {
+            $("#test_score").val(data.test || 0);
+            $("#assignment_score").val(data.assignment || 0);
+            $("#practical_score").val(data.practical || 0);
+            $("#project_score").val(data.project || 0);
+            $("#exam_score").val(data.exam || 0);
+            updateTotal();
+
+            if (data.is_finalized) {
+                $("#finalized_notice").show();
+            } else {
+                $("#finalized_notice").hide();
+            }
+        }).fail(function() {
+            $("#test_score").val(0);
+            $("#assignment_score").val(0);
+            $("#practical_score").val(0);
+            $("#project_score").val(0);
+            $("#exam_score").val(0);
+            updateTotal();
+            $("#finalized_notice").hide();
+        });
+    });
+
+    function confirmFinalize() {
+        var subjectId = $("#subject").val();
+        if (!subjectId) {
+            alert("Please select a subject first.");
+            return;
+        }
+        if (confirm("Are you sure you want to finalize and lock all marks for this subject? Once locked, corrections will require administrative authorization and will be logged.")) {
+            window.location.href = "/staff/finalize-subject-results/" + subjectId + "/";
+        }
+    }
 </script>
 {% endblock custom_js %}

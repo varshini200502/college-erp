@@ -1,0 +1,152 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}NAAC Criterion {{ criterion.criterion_number }}: {{ criterion.name }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'accreditation_home' %}">Accreditation</a></li>
+    <li class="breadcrumb-item active">Criterion {{ criterion.criterion_number }}</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Criterion Info & Auto-Sync -->
+    <div class="col-12 mb-4">
+        <div class="erpnext-card bg-light border-0">
+            <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold mb-1">Criterion {{ criterion.criterion_number }}: {{ criterion.name }}</h5>
+                    <p class="text-muted mb-0 small">{{ criterion.description }}</p>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="auto_sync">
+                    <button type="submit" class="btn btn-sm btn-outline-success">
+                        <i class="fas fa-sync-alt me-1"></i> Auto-Sync Live ERP Records
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Metric Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-plus-circle text-primary me-2"></i> Add / Log Metric Evidence</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_metric">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Metric Code *</label>
+                        <input type="text" name="metric_code" class="form-control form-control-sm" placeholder="e.g. 1.1.1, 2.2.2" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Metric Title *</label>
+                        <input type="text" name="title" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Quantitative Value</label>
+                        <input type="number" step="0.01" name="quantitative_value" class="form-control form-control-sm" value="0.0">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Academic Year</label>
+                            <input type="text" name="academic_year" class="form-control form-control-sm" value="2024-2025">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Department</label>
+                            <select name="department" class="form-select form-select-sm">
+                                <option value="">Institutional</option>
+                                {% for c in courses %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Qualitative Description / Notes</label>
+                        <textarea name="qualitative_notes" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Supporting Evidence File</label>
+                        <input type="file" name="supporting_document" class="form-control form-control-sm">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Log Criterion Metric</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Ledger -->
+    <div class="col-lg-8 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Criterion Metrics & Verification ({{ metrics.count }})</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Title & Notes</th>
+                                <th>Value</th>
+                                <th>Evidence</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in metrics %}
+                            <tr>
+                                <td><code>{{ m.metric_code }}</code></td>
+                                <td>
+                                    <strong>{{ m.title }}</strong>
+                                    {% if m.qualitative_notes %}
+                                        <div class="text-muted small">{{ m.qualitative_notes|truncatechars:60 }}</div>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ m.quantitative_value }}</span></td>
+                                <td>
+                                    {% if m.supporting_document %}
+                                        <a href="{{ m.supporting_document.url }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2">View</a>
+                                    {% else %}
+                                        <span class="text-muted small">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if m.is_verified %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="verify_metric">
+                                        <input type="hidden" name="metric_id" value="{{ m.id }}">
+                                        {% if not m.is_verified %}
+                                            <input type="hidden" name="decision" value="true">
+                                            <button type="submit" class="btn btn-xs btn-success py-0 px-2">Verify</button>
+                                        {% else %}
+                                            <input type="hidden" name="decision" value="false">
+                                            <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2">Revoke</button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No metrics logged for this criterion yet. Click "Auto-Sync Live ERP Records" above to generate initial metrics.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -70,7 +70,123 @@
                 </div>
             </div>
         </div>
+    <!-- Financial Summary & Attendance Detail Section -->
+    <div class="row mt-4">
+        <!-- Fee Status Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="erpnext-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-wallet text-success me-2"></i> Fee Account</h5>
+                    <a href="{% url 'student_view_fees' %}" class="btn btn-sm btn-outline-primary">Details</a>
+                </div>
+                <div class="card-body">
+                    {% if fee_account %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Fee Structure</small>
+                        <strong>{{ fee_account.fee_structure.name|default:"Standard Fee" }}</strong>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center">
+                                <small class="text-muted d-block">Paid</small>
+                                <span class="text-success font-weight-bold">₹{{ fee_account.amount_paid|floatformat:0 }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center">
+                                <small class="text-muted d-block">Pending</small>
+                                <span class="{% if fee_account.pending_amount > 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">
+                                    ₹{{ fee_account.pending_amount|floatformat:0 }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Payment Status:</small>
+                        <span class="badge {% if fee_account.status == 'Paid' %}bg-success{% elif fee_account.status == 'Partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            {{ fee_account.status }}
+                        </span>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0"><i class="fas fa-info-circle me-1"></i> No fee account linked yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Attendance Table with Shortage Alert -->
+        <div class="col-lg-8 mb-4">
+            <div class="erpnext-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-clipboard-check text-primary me-2"></i> Course Attendance Status</h5>
+                    <a href="{% url 'student_view_attendance' %}" class="btn btn-sm btn-outline-secondary">View Dates</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subject</th>
+                                    <th class="text-center">Classes</th>
+                                    <th class="text-center">Attended</th>
+                                    <th class="text-center">Percentage</th>
+                                    <th class="text-center">Eligibility</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in subject_attendance_summary %}
+                                <tr>
+                                    <td><strong>{{ item.subject.name }}</strong></td>
+                                    <td class="text-center">{{ item.total_classes }}</td>
+                                    <td class="text-center">{{ item.attended }}</td>
+                                    <td class="text-center font-weight-bold">{{ item.percentage }}%</td>
+                                    <td class="text-center">
+                                        {% if item.is_shortage %}
+                                        <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i> Shortage (&lt;75%)</span>
+                                        {% else %}
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i> Eligible</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted">No attendance sessions recorded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Achievements & Activities -->
+    {% if achievements or placements %}
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="erpnext-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-trophy text-warning me-2"></i> Achievements & Career Milestones</h5>
+                    <a href="{% url 'student_portfolio' %}" class="btn btn-sm btn-outline-primary">My Portfolio</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for a in achievements %}
+                        <div class="col-md-4 mb-2">
+                            <div class="p-2 border rounded">
+                                <span class="badge bg-primary mb-1">{{ a.achievement_type }}</span>
+                                <h6 class="mb-1 text-truncate">{{ a.title }}</h6>
+                                <small class="text-muted">{{ a.date|default:"Recent" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock content %}
 

@@ -1,4 +1,4 @@
-# Byte-compiled / pycacahe
+# Byte-compiled / pycache
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,14 +7,21 @@ __pycache__/
 *.mo
 *.pot
 
-# Django stuff:
+# Django runtime & database
 *.log
 local_settings.py
 db.sqlite3
+*.sqlite3
 
-# Environments
+# Static files collected during deployment
+static/
+staticfiles/
+
+# Environments & secrets
 .vscode
+.idea/
 .env
+.env.*
 .venv
 env/
 venv/
@@ -25,10 +32,12 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# mypy
+# mypy & Pyre
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Pyre type checker
 .pyre/
+
+# OS temporary files
+.DS_Store
+Thumbs.db

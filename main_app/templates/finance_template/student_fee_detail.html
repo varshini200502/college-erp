@@ -1,0 +1,206 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Fee Account: {{ account.student }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'finance_home' %}">Finance</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'student_fee_accounts' %}">Fee Accounts</a></li>
+    <li class="breadcrumb-item active">{{ account.student }}</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Fee Account Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="erpnext-card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">Student Financial Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h5 class="mb-0">{{ account.student.admin.first_name }} {{ account.student.admin.last_name }}</h5>
+                    <p class="text-muted small mb-1">{{ account.student.admin.email }}</p>
+                    <span class="badge bg-secondary">{{ account.student.course.name }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total Structure Fee:</span>
+                    <strong>₹{{ account.fee_structure.total_fee|default:0.0 }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Scholarship:</span>
+                    <span class="text-success">- ₹{{ account.scholarship_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Concessions:</span>
+                    <span class="text-success">- ₹{{ account.concession_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Net Payable:</span>
+                    <strong>₹{{ account.net_fee }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Paid to Date:</span>
+                    <span class="text-success fw-bold">₹{{ account.paid_amount }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="h6 mb-0 text-danger">Outstanding Balance:</span>
+                    <span class="h5 mb-0 text-danger fw-bold">₹{{ account.due_amount }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assign / Update Structure Form -->
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Assign Structure & Concessions</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="assign_structure">
+                    <div class="mb-2">
+                        <label class="form-label small">Fee Structure</label>
+                        <select name="fee_structure" class="form-select form-select-sm" required>
+                            {% for st in structures %}
+                            <option value="{{ st.id }}" {% if account.fee_structure.id == st.id %}selected{% endif %}>{{ st.name }} (₹{{ st.total_fee }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Scholarship Amount (₹)</label>
+                        <input type="number" step="0.01" name="scholarship_amount" class="form-control form-control-sm" value="{{ account.scholarship_amount }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Concession Amount (₹)</label>
+                        <input type="number" step="0.01" name="concession_amount" class="form-control form-control-sm" value="{{ account.concession_amount }}">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">Update Structure</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments & Record Payment Form -->
+    <div class="col-lg-8 mb-4">
+        <!-- Record Payment Form -->
+        <div class="erpnext-card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title text-white mb-0"><i class="fas fa-cash-register me-2"></i> Record Student Payment</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="record_payment">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Amount Paid (₹) *</label>
+                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="e.g. 25000" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Payment Mode *</label>
+                        <select name="payment_mode" class="form-select">
+                            <option value="Online">Online / UPI</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer (NEFT/RTGS)</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="DD">Demand Draft</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Transaction / Ref Number</label>
+                        <input type="text" name="transaction_reference" class="form-control" placeholder="UTR / Txn ID">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Remarks / Notes</label>
+                        <input type="text" name="remarks" class="form-control form-control-sm" placeholder="Installment details, bank branch, etc.">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success"><i class="fas fa-check-circle me-1"></i> Confirm & Generate Receipt</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Payments Ledger Table -->
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Payment History & Receipts</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Receipt #</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Reference</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr class="{% if p.is_refunded %}table-secondary text-muted{% endif %}">
+                                <td><code>{{ p.receipt_number }}</code></td>
+                                <td>{{ p.payment_date }}</td>
+                                <td class="fw-bold {% if p.is_refunded %}text-decoration-line-through text-muted{% else %}text-success{% endif %}">₹{{ p.amount_paid }}</td>
+                                <td>{{ p.payment_mode }}</td>
+                                <td><small>{{ p.transaction_reference|default:"-" }}</small></td>
+                                <td>
+                                    {% if p.is_refunded %}
+                                        <span class="badge bg-danger">Refunded</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Success</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'view_receipt' p.id %}" class="btn btn-sm btn-outline-primary py-0 px-2" title="Download PDF Receipt">
+                                        <i class="fas fa-file-pdf text-danger"></i>
+                                    </a>
+                                    {% if not p.is_refunded %}
+                                    <button class="btn btn-sm btn-outline-danger py-0 px-2" data-bs-toggle="modal" data-bs-target="#refundModal{{ p.id }}" title="Refund">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    <!-- Refund Modal -->
+                                    <div class="modal fade" id="refundModal{{ p.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form method="POST" action="{% url 'process_fee_refund' p.id %}">
+                                                    {% csrf_token %}
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Refund Payment #{{ p.receipt_number }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to refund ₹{{ p.amount_paid }} for {{ account.student }}?</p>
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-bold">Reason for Refund *</label>
+                                                            <textarea name="refund_reason" class="form-control" required placeholder="State audit justification..."></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-danger btn-sm">Confirm Refund</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="7" class="text-center text-muted py-4">No payments recorded for this account.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

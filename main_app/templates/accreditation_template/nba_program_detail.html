@@ -1,0 +1,199 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}NBA OBE Management: {{ program.program_name }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'accreditation_home' %}">Accreditation</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'nba_programs_list' %}">NBA Programs</a></li>
+    <li class="breadcrumb-item active">{{ program.program_name }}</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row">
+    <!-- Program Outcomes (POs) & PSOs -->
+    <div class="col-lg-8 mb-4">
+        <!-- Subjects List with CO-PO Mapping Link -->
+        <div class="erpnext-card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title text-white mb-0"><i class="fas fa-book me-2"></i> Program Courses & CO-PO Matrices</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Subject</th>
+                                <th>Faculty</th>
+                                <th>Course Outcomes (COs)</th>
+                                <th>CO-PO Mapping & Attainment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in subjects %}
+                            <tr>
+                                <td><strong>{{ s.name }}</strong></td>
+                                <td>{{ s.staff }}</td>
+                                <td><span class="badge bg-secondary">{{ s.course_outcomes.count }} COs defined</span></td>
+                                <td>
+                                    <a href="{% url 'subject_co_po_mapping' s.id %}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                        <i class="fas fa-matrix-org me-1"></i> CO-PO Matrix & Attainment
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">No subjects in this program.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Program Outcomes (POs) Table -->
+        <div class="erpnext-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Program Outcomes (POs: PO1 to PO12)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 15%;">Code</th>
+                                <th style="width: 30%;">Title</th>
+                                <th style="width: 55%;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for po in pos %}
+                            <tr>
+                                <td><span class="badge bg-primary">{{ po.code }}</span></td>
+                                <td><strong>{{ po.title }}</strong></td>
+                                <td class="small text-muted">{{ po.description }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">No POs registered.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Continuous Improvement / Action Taken Reports -->
+        <div class="erpnext-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-line text-success me-2"></i> Continuous Improvement & Action Taken (Criterion 7)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Year</th>
+                                <th>Outcome</th>
+                                <th>Target / Attained</th>
+                                <th>Gap</th>
+                                <th>Action Proposed & Taken</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for act in actions %}
+                            <tr>
+                                <td>{{ act.academic_year }}</td>
+                                <td><span class="badge bg-secondary">{{ act.outcome_code }}</span></td>
+                                <td>{{ act.target_level }} / {{ act.attained_level }}</td>
+                                <td><span class="badge bg-danger">{{ act.gap }}</span></td>
+                                <td>
+                                    <strong>{{ act.action_proposed }}</strong>
+                                    {% if act.action_taken %}<div class="text-muted small">ATR: {{ act.action_taken }}</div>{% endif %}
+                                </td>
+                                <td><span class="badge bg-light text-dark">{{ act.status }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">No continuous improvement actions recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forms Column: PEO, PSO, Action Taken -->
+    <div class="col-lg-4 mb-4">
+        <!-- Add Action Taken Form -->
+        <div class="erpnext-card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0"><i class="fas fa-plus text-success me-1"></i> Log Improvement Action</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_action_taken">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Outcome Type</label>
+                            <select name="outcome_type" class="form-select form-select-sm">
+                                <option value="PO">PO</option>
+                                <option value="PSO">PSO</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Code</label>
+                            <input type="text" name="outcome_code" class="form-control form-control-sm" placeholder="PO1" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Target Level (0-3)</label>
+                            <input type="number" step="0.1" name="target_level" class="form-control form-control-sm" value="2.5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Attained Level</label>
+                            <input type="number" step="0.1" name="attained_level" class="form-control form-control-sm" value="2.1">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Action Proposed *</label>
+                        <textarea name="action_proposed" class="form-control form-control-sm" rows="2" placeholder="e.g. Conduct hands-on workshops on modern frameworks" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Action Taken (ATR)</label>
+                        <textarea name="action_taken" class="form-control form-control-sm" rows="2" placeholder="e.g. Organized 2 guest lectures and Python coding bootcamp"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success w-100">Record Action</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add PEO / PSO Form -->
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h6 class="card-title mb-0"><i class="fas fa-plus text-primary me-1"></i> Define PEO or PSO</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_pso">
+                    <div class="mb-2">
+                        <label class="form-label small">PSO Code *</label>
+                        <input type="text" name="code" class="form-control form-control-sm" placeholder="e.g. PSO1" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Title *</label>
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Software & Systems Engineering" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Description *</label>
+                        <textarea name="description" class="form-control form-control-sm" rows="2" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add Program Specific Outcome</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

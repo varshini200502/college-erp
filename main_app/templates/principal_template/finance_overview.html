@@ -1,0 +1,104 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Institutional Finance Overview{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item active">Finance Overview</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #198754 !important;">
+            <small class="text-muted text-uppercase fw-bold">Total Inflow (Fees)</small>
+            <h3 class="text-success mt-1">₹{{ total_income }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #dc3545 !important;">
+            <small class="text-muted text-uppercase fw-bold">Total Outflow (Expenses)</small>
+            <h3 class="text-danger mt-1">₹{{ total_expense }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card border-0 shadow-sm" style="border-left: 4px solid #0d6efd !important;">
+            <small class="text-muted text-uppercase fw-bold">Operating Net Balance</small>
+            <h3 class="text-primary mt-1">₹{{ surplus }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Fee Receipts</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Receipt #</th>
+                                <th>Student</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td><code>{{ p.receipt_number }}</code></td>
+                                <td>{{ p.student_fee_account.student }}</td>
+                                <td class="text-success fw-bold">₹{{ p.amount_paid }}</td>
+                                <td><span class="badge bg-light text-dark">{{ p.payment_mode }}</span></td>
+                                <td>{{ p.payment_date }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">No payments recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="erpnext-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Expenditures</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Expense Title</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in expenses %}
+                            <tr>
+                                <td>{{ e.title }}</td>
+                                <td><span class="badge bg-info text-dark">{{ e.category }}</span></td>
+                                <td class="text-danger fw-bold">₹{{ e.amount }}</td>
+                                <td>{{ e.expense_date }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">No expenses recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

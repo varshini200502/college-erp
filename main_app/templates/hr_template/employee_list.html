@@ -1,0 +1,90 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Employee Master Directory{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'hr_home' %}">HR</a></li>
+    <li class="breadcrumb-item active">Employees</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="erpnext-card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Department</label>
+                <select name="course" class="form-select form-select-sm">
+                    <option value="">All Departments</option>
+                    {% for c in courses %}
+                    <option value="{{ c.id }}" {% if selected_dept == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Employment Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="On Leave" {% if selected_status == 'On Leave' %}selected{% endif %}>On Leave</option>
+                    <option value="Resigned" {% if selected_status == 'Resigned' %}selected{% endif %}>Resigned</option>
+                    <option value="Retired" {% if selected_status == 'Retired' %}selected{% endif %}>Retired</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary me-2"><i class="fas fa-filter me-1"></i> Filter</button>
+                <a href="{% url 'employee_list' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="erpnext-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Registered Employees ({{ staff_members.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Employee ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Joining Date</th>
+                        <th>Service Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in staff_members %}
+                    <tr>
+                        <td><code>{{ s.admin.employee_record.employee_id|default:s.faculty_id|default:"EMP-NEW" }}</code></td>
+                        <td>
+                            <strong>{{ s.admin.first_name }} {{ s.admin.last_name }}</strong>
+                            <div class="text-muted small">{{ s.admin.email }}</div>
+                        </td>
+                        <td>{{ s.course.name }}</td>
+                        <td>{{ s.designation }}</td>
+                        <td>{{ s.date_of_joining|default:"-" }}</td>
+                        <td>
+                            <span class="badge {% if s.employment_status == 'Active' %}bg-success{% elif s.employment_status == 'On Leave' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ s.employment_status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'employee_detail' s.id %}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                <i class="fas fa-edit me-1"></i> Edit Profile
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">No employees registered.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

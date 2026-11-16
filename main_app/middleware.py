@@ -7,9 +7,6 @@ from django.db.utils import OperationalError, ProgrammingError
 class LoginCheckMiddleWare(MiddlewareMixin):
     def process_view(self, request, view_func, view_args, view_kwargs):
         modulename = view_func.__module__
-<<<<<<< HEAD
-        user = request.user # Who is the current user ?
-=======
         auth_allowed_paths = {
             reverse('login_page'),
             reverse('user_login'),
@@ -17,10 +14,9 @@ class LoginCheckMiddleWare(MiddlewareMixin):
         }
 
         try:
-            user = request.user # Who is the current user ?
+            user = request.user
             user_type = str(getattr(user, 'user_type', ''))
         except (OperationalError, ProgrammingError):
-            # Let auth pages load even when DB tables are not initialized yet.
             if (
                 request.path in auth_allowed_paths
                 or modulename.startswith('django.contrib.auth')
@@ -29,21 +25,39 @@ class LoginCheckMiddleWare(MiddlewareMixin):
                 return None
             return redirect(reverse('login_page'))
 
->>>>>>> 1cca3cd (Fix login 500 by handling DB readiness in auth middleware)
         if user.is_authenticated:
-            if user.user_type == '1': # Is it the HOD/Admin
+            # Check user role and restrict access to unauthorized module endpoints
+            # Admin (1) & Principal (4) have broad administrative access
+            if user_type in ['1', '4']:
                 if modulename == 'main_app.student_views':
-                    return redirect(reverse('admin_home'))
-            elif user.user_type == '2': #  Staff :-/ ?
-                if modulename == 'main_app.student_views' or modulename == 'main_app.hod_views':
+                    target = 'principal_home' if user_type == '4' else 'admin_home'
+                    return redirect(reverse(target))
+            elif user_type == '2':  # Staff / Faculty
+                if modulename in ['main_app.student_views', 'main_app.hod_views', 'main_app.principal_views', 'main_app.finance_views', 'main_app.hr_views']:
                     return redirect(reverse('staff_home'))
-            elif user.user_type == '3': # ... or Student ?
-                if modulename == 'main_app.hod_views' or modulename == 'main_app.staff_views':
+            elif user_type == '3':  # Student
+                # Allow student to download their own fee receipt
+                if request.path.startswith('/finance/receipt/'):
+                    return None
+                if modulename in ['main_app.hod_views', 'main_app.staff_views', 'main_app.principal_views', 'main_app.finance_views', 'main_app.hr_views', 'main_app.accreditation_views']:
                     return redirect(reverse('student_home'))
-            else: # None of the aforementioned ? Please take the user to login page
+            elif user_type == '5':  # Finance
+                if modulename in ['main_app.student_views', 'main_app.staff_views', 'main_app.hr_views']:
+                    return redirect(reverse('finance_home'))
+            elif user_type == '7':  # Accreditation
+                if modulename in ['main_app.student_views', 'main_app.staff_views', 'main_app.finance_views', 'main_app.hr_views']:
+                    return redirect(reverse('accreditation_home'))
+            elif user_type == '6':  # Deprecated HR role
                 return redirect(reverse('login_page'))
         else:
-            if request.path == reverse('login_page') or modulename == 'django.contrib.auth.views' or request.path == reverse('user_login'): # If the path is login or has anything to do with authentication, pass
-                pass
+            if (
+                request.path in auth_allowed_paths
+                or modulename == 'django.contrib.auth.views'
+                or request.path.startswith('/admin/')
+                or request.path.startswith('/static/')
+                or request.path.startswith('/media/')
+                or request.path == reverse('showFirebaseJS')
+            ):
+                return None
             else:
                 return redirect(reverse('login_page'))
