@@ -42,3 +42,6 @@ dmypy.json
 # OS temporary files
 .DS_Store
 Thumbs.db
+
+.vercel
+.env*
