@@ -70,34 +70,34 @@ if EXTRA_ALLOWED_HOSTS:
         if clean_h and clean_h not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(clean_h)
 
-# CSRF Trusted Origins for HTTPS on Render and Vercel
-# Supports both raw domain format (for Django 3.x is_same_domain) and https:// scheme format
+# CSRF Trusted Origins for HTTPS on Render and Vercel (Scheme required in Django 4.0+)
 CSRF_TRUSTED_ORIGINS = [
-    'college-erp-xwqr.onrender.com',
     'https://college-erp-xwqr.onrender.com',
-    '.vercel.app',
     'https://*.vercel.app'
 ]
+
+if RENDER_EXTERNAL_HOSTNAME:
+    origin = f'https://{RENDER_EXTERNAL_HOSTNAME}' if not RENDER_EXTERNAL_HOSTNAME.startswith(('http://', 'https://')) else RENDER_EXTERNAL_HOSTNAME
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 
 for v_env in ('VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL'):
     v_val = os.environ.get(v_env)
     if v_val:
         clean_v_host = v_val.replace('https://', '').replace('http://', '').split('/')[0].strip()
         if clean_v_host:
-            for entry in (clean_v_host, f'https://{clean_v_host}'):
-                if entry not in CSRF_TRUSTED_ORIGINS:
-                    CSRF_TRUSTED_ORIGINS.append(entry)
+            v_origin = f'https://{clean_v_host}'
+            if v_origin not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(v_origin)
 
 EXTRA_CSRF = os.environ.get('CSRF_TRUSTED_ORIGINS')
 if EXTRA_CSRF:
     for c in EXTRA_CSRF.split(','):
         clean_c = c.strip()
         if clean_c:
-            raw_c = clean_c.replace('https://', '').replace('http://', '').split('/')[0].strip()
-            https_c = f'https://{raw_c}' if not clean_c.startswith('https://') else clean_c
-            for entry in (raw_c, https_c):
-                if entry not in CSRF_TRUSTED_ORIGINS:
-                    CSRF_TRUSTED_ORIGINS.append(entry)
+            entry = clean_c if clean_c.startswith(('http://', 'https://')) else f'https://{clean_c}'
+            if entry not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(entry)
 
 # Google reCAPTCHA Configuration
 RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '')
@@ -157,6 +157,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'college_management_system.wsgi.application'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Database Configuration
 # Default: Local SQLite (kept untouched for local development)

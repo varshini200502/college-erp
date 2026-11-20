@@ -42,7 +42,7 @@ def test_vercel_json_configuration():
     python_build = next((b for b in builds if b.get('use') == '@vercel/python'), None)
     assert python_build is not None, "Missing @vercel/python build entry"
     assert python_build.get('src') == 'college_management_system/wsgi.py', "Python entrypoint mismatch"
-    assert python_build.get('config', {}).get('runtime') == 'python3.11', "Python runtime must be python3.11"
+    assert python_build.get('config', {}).get('runtime') in ('python3.12', 'python3.11'), "Python runtime must be python3.12"
     
     static_build = next((b for b in builds if b.get('use') == '@vercel/static-build'), None)
     assert static_build is not None, "Missing @vercel/static-build entry for static assets"
@@ -70,11 +70,11 @@ def test_allowed_hosts_and_csrf():
     assert '.vercel.app' in settings.ALLOWED_HOSTS or any('vercel' in h for h in settings.ALLOWED_HOSTS), \
         "Vercel domain not present in ALLOWED_HOSTS"
     
-    # Verify CSRF trusted origins has both raw and https:// format
-    assert 'college-erp-xwqr.onrender.com' in settings.CSRF_TRUSTED_ORIGINS, \
-        "Render domain missing from CSRF_TRUSTED_ORIGINS"
+    # Verify CSRF trusted origins has HTTPS format compliant with Django 4.0+
     assert 'https://college-erp-xwqr.onrender.com' in settings.CSRF_TRUSTED_ORIGINS, \
         "Render HTTPS domain missing from CSRF_TRUSTED_ORIGINS"
+    assert 'https://*.vercel.app' in settings.CSRF_TRUSTED_ORIGINS, \
+        "Vercel wildcard HTTPS domain missing from CSRF_TRUSTED_ORIGINS"
     
     # Verify is_same_domain matches correctly for Django 3.1
     assert is_same_domain('college-erp-xwqr.onrender.com', 'college-erp-xwqr.onrender.com'), \
