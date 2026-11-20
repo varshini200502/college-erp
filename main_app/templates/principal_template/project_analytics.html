@@ -1,0 +1,272 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item active">Project & Domain Analytics</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Top Summary Banner -->
+    <div class="erpnext-card mb-4" style="background: linear-gradient(135deg, #4b134f 0%, #c94b4b 100%); color: white;">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3 class="fw-bold mb-1"><i class="fas fa-project-diagram me-2"></i>Student Innovation & Technical Domain Analytics</h3>
+                    <p class="mb-0 text-white-50">Live institutional monitoring of what students are building, emerging research domains, capstone progress, and interdisciplinary problem-solving across all degree programmes.</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <span class="badge bg-light text-dark fs-6 p-2 me-2">
+                        <i class="fas fa-layer-group text-primary me-1"></i> 17 Technical Domains
+                    </span>
+                    <span class="badge bg-light text-dark fs-6 p-2">
+                        <i class="fas fa-users text-success me-1"></i> {{ students_participating }} Students Active
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Total Capstones</div>
+                        <h2 class="fw-bold text-primary mb-0">{{ total_projects }}</h2>
+                        <small class="text-muted">Recorded in Portfolio</small>
+                    </div>
+                    <div class="stat-icon bg-primary text-white rounded-circle p-3">
+                        <i class="fas fa-folder-open fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">In Progress / Ongoing</div>
+                        <h2 class="fw-bold text-warning mb-0">{{ ongoing_count }}</h2>
+                        <small class="text-muted">Active Development</small>
+                    </div>
+                    <div class="stat-icon bg-warning text-white rounded-circle p-3">
+                        <i class="fas fa-cog fa-spin fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Completed & Awarded</div>
+                        <h2 class="fw-bold text-success mb-0">{{ completed_count }}</h2>
+                        <small class="text-muted">Published or Patented</small>
+                    </div>
+                    <div class="stat-icon bg-success text-white rounded-circle p-3">
+                        <i class="fas fa-check-double fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-purple" style="border-left-color: #6f42c1 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Active Innovators</div>
+                        <h2 class="fw-bold text-purple mb-0" style="color: #6f42c1;">{{ students_participating }}</h2>
+                        <small class="text-muted">Enrolled Students Participating</small>
+                    </div>
+                    <div class="stat-icon text-white rounded-circle p-3" style="background: #6f42c1;">
+                        <i class="fas fa-user-astronaut fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clickable Domain Analytics Grid -->
+    <div class="erpnext-card mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 fw-bold"><i class="fas fa-th-large text-primary me-2"></i>17 Configurable Technical Domains — Click to Drill-Down</h6>
+            {% if selected_domain %}
+                <a href="{% url 'principal_projects' %}" class="btn btn-xs btn-outline-danger">
+                    <i class="fas fa-times me-1"></i> Clear Domain Filter ({{ selected_domain }})
+                </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                {% for d in domain_stats %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <a href="{% url 'principal_projects' %}?domain={{ d.domain|urlencode }}&status={{ selected_status }}&department={{ selected_dept }}" 
+                       class="text-decoration-none d-block p-2 border rounded transition-all {% if d.is_active %}bg-primary text-white border-primary shadow-sm{% elif d.count > 0 %}bg-light text-dark border-secondary{% else %}bg-white text-muted border-light{% endif %}"
+                       style="font-size: 0.85rem;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-truncate me-2 fw-bold" title="{{ d.domain }}">
+                                <i class="fas {% if d.count > 0 %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-1" style="font-size: 0.65rem;"></i>
+                                {{ d.domain }}
+                            </span>
+                            <span class="badge {% if d.is_active %}bg-light text-dark{% elif d.count > 0 %}bg-primary text-white{% else %}bg-secondary text-white-50{% endif %}">
+                                {{ d.count }}
+                            </span>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="erpnext-card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-center">
+                {% if selected_domain %}
+                    <input type="hidden" name="domain" value="{{ selected_domain }}">
+                {% endif %}
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Lifecycle Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Lifecycle Stages</option>
+                        {% for code, label in lifecycle_choices %}
+                            <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Owning Department</label>
+                    <select name="department" class="form-select form-select-sm">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_dept == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }} ({{ dept.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Search Project</label>
+                    <input type="text" name="search" class="form-control form-control-sm" value="{{ search_query }}" placeholder="Title, Problem Statement, Tech Stack, Student...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-sm btn-primary w-100 me-2"><i class="fas fa-filter me-1"></i> Filter</button>
+                    <a href="{% url 'principal_projects' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filtered Projects Detailed Table -->
+    <div class="erpnext-card mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold">
+                <i class="fas fa-tasks text-primary me-2"></i>
+                {% if selected_domain %}
+                    Projects in <span class="text-primary">{{ selected_domain }}</span> ({{ projects.count }})
+                {% else %}
+                    Institutional Student Projects ({{ projects.count }})
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th style="min-width: 220px;">Project Title & Problem Statement</th>
+                            <th>Technical Domain</th>
+                            <th>Owning Programme</th>
+                            <th>Student Team</th>
+                            <th>Guide</th>
+                            <th>Lifecycle Status</th>
+                            <th>Technologies</th>
+                            <th class="text-center">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in projects %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong class="text-dark d-block">{{ p.title }}</strong>
+                                <span class="badge bg-secondary mb-1">{{ p.project_type }}</span>
+                                {% if p.problem_statement %}
+                                    <div class="text-muted small" style="max-width: 320px; max-height: 4.5em; overflow: hidden; text-overflow: ellipsis;">
+                                        <strong>Problem:</strong> {{ p.problem_statement }}
+                                    </div>
+                                {% endif %}
+                                {% if p.repository_url or p.demo_url %}
+                                    <div class="mt-1">
+                                        {% if p.repository_url %}
+                                            <a href="{{ p.repository_url }}" target="_blank" class="badge bg-dark text-white text-decoration-none me-1">
+                                                <i class="fab fa-github me-1"></i>Code
+                                            </a>
+                                        {% endif %}
+                                        {% if p.demo_url %}
+                                            <a href="{{ p.demo_url }}" target="_blank" class="badge bg-success text-white text-decoration-none">
+                                                <i class="fas fa-play me-1"></i>Demo
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div><strong class="text-primary">{{ p.technical_domain }}</strong></div>
+                                {% if p.technical_subdomain %}<small class="text-muted">{{ p.technical_subdomain }}</small>{% endif %}
+                            </td>
+                            <td>
+                                <div><strong>{{ p.primary_programme.code }}</strong></div>
+                                <small class="text-muted">{{ p.primary_programme.name }}</small>
+                            </td>
+                            <td>
+                                {% for st in p.students.all %}
+                                    <div>
+                                        <a href="{% url 'student_profile' st.id %}" class="text-decoration-none fw-bold" title="Open complete profile">
+                                            <i class="fas fa-user-graduate me-1 text-info"></i>{{ st.admin.first_name }} {{ st.admin.last_name }}
+                                        </a>
+                                    </div>
+                                {% empty %}
+                                    <span class="text-muted small">No students</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if p.guide %}
+                                    <a href="{% url 'faculty_profile' p.guide.id %}" class="text-decoration-none fw-bold text-success" title="Open faculty profile">
+                                        <i class="fas fa-chalkboard-teacher me-1"></i>{{ p.guide.admin.first_name }} {{ p.guide.admin.last_name }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if p.lifecycle_status == 'Completed' %}bg-success{% elif p.lifecycle_status == 'Published/Awarded' %}bg-primary{% elif p.lifecycle_status == 'In Progress' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ p.lifecycle_status }}
+                                </span>
+                            </td>
+                            <td><small class="text-muted">{{ p.technologies|default:"-" }}</small></td>
+                            <td class="text-center">
+                                <span class="badge bg-primary fs-6">{{ p.total_score }} / 100</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="fas fa-folder-open fa-3x text-muted mb-3 d-block"></i>
+                                No projects found matching the active domain and filters.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

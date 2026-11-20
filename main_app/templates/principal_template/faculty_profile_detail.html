@@ -1,0 +1,450 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'principal_faculty' %}">Faculty</a></li>
+    <li class="breadcrumb-item active">{{ staff.admin.first_name }} {{ staff.admin.last_name }}</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Faculty Header Dossier -->
+    <div class="erpnext-card mb-4 shadow-sm">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center mb-3 mb-md-0">
+                    {% if staff.admin.profile_pic %}
+                        <img src="{{ staff.admin.profile_pic }}" alt="Faculty Avatar" class="rounded-circle img-thumbnail shadow-sm" style="width: 110px; height: 110px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-light text-success d-inline-flex align-items-center justify-content-center border" style="width: 110px; height: 110px;">
+                            <i class="fas fa-chalkboard-teacher fa-4x"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h3 class="fw-bold mb-1 text-dark">{{ staff.admin.first_name }} {{ staff.admin.last_name }}</h3>
+                    <div class="text-muted mb-2">
+                        <i class="fas fa-envelope me-1"></i> {{ staff.admin.email }} | 
+                        <i class="fas fa-id-badge me-1"></i> ID: <code>{{ staff.faculty_id|default:"-" }}</code>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="badge bg-success fs-6">{{ staff.designation }}</span>
+                        <span class="badge bg-primary">{{ staff.primary_department.name|default:staff.course.name }}</span>
+                        <span class="badge {% if staff.employment_status == 'Active' %}bg-success{% elif staff.employment_status == 'On Leave' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ staff.employment_status }}
+                        </span>
+                        <span class="badge bg-light text-dark border">{{ staff.highest_qualification|default:"Ph.D." }}</span>
+                        <span class="badge bg-light text-dark border">{{ staff.total_experience_years }} Years Exp</span>
+                    </div>
+                </div>
+                <div class="col-md-4 mt-3 mt-md-0">
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Papers</div>
+                                <h4 class="fw-bold text-purple mb-0" style="color: #6f42c1;">{{ publications.count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Patents</div>
+                                <h4 class="fw-bold text-warning mb-0">{{ patents.count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Guided</div>
+                                <h4 class="fw-bold text-primary mb-0">{{ guided_projects.count }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs erpnext-tabs mb-4" id="facultyProfileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="fac-personal-tab" data-bs-toggle="tab" data-bs-target="#fac-personal" type="button" role="tab">
+                <i class="fas fa-user-tie me-1"></i> Personal & Employment
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="fac-teaching-tab" data-bs-toggle="tab" data-bs-target="#fac-teaching" type="button" role="tab">
+                <i class="fas fa-book-reader me-1"></i> Teaching ({{ subjects.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="fac-research-tab" data-bs-toggle="tab" data-bs-target="#fac-research" type="button" role="tab">
+                <i class="fas fa-microscope me-1 text-purple"></i> Research & Publications ({{ publications.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="fac-fdp-tab" data-bs-toggle="tab" data-bs-target="#fac-fdp" type="button" role="tab">
+                <i class="fas fa-certificate me-1 text-info"></i> Faculty Development ({{ trainings.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="fac-guidance-tab" data-bs-toggle="tab" data-bs-target="#fac-guidance" type="button" role="tab">
+                <i class="fas fa-project-diagram me-1 text-primary"></i> Guided Projects ({{ guided_projects.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="fac-intl-tab" data-bs-toggle="tab" data-bs-target="#fac-intl" type="button" role="tab">
+                <i class="fas fa-globe me-1 text-success"></i> International ({{ international_contributions.count }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="facultyProfileTabContent">
+
+        <!-- TAB A: Personal & Employment Details -->
+        <div class="tab-pane fade show active" id="fac-personal" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="erpnext-card h-100">
+                        <div class="card-header bg-light py-3">
+                            <h6 class="card-title mb-0 fw-bold"><i class="fas fa-id-card text-success me-2"></i>Employment & Academic Qualifications</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr><th class="w-40 bg-light">Full Name</th><td>{{ staff.admin.first_name }} {{ staff.admin.last_name }}</td></tr>
+                                <tr><th class="bg-light">Faculty Employee ID</th><td><code>{{ staff.faculty_id|default:"-" }}</code></td></tr>
+                                <tr><th class="bg-light">Designation</th><td><span class="badge bg-secondary">{{ staff.designation }}</span></td></tr>
+                                <tr><th class="bg-light">Primary Department</th><td>{{ staff.primary_department.name|default:staff.course.name }}</td></tr>
+                                <tr><th class="bg-light">Highest Qualification</th><td><strong>{{ staff.highest_qualification|default:"Ph.D." }}</strong></td></tr>
+                                <tr><th class="bg-light">Specialization Domain</th><td>{{ staff.specialization|default:"Computer Science" }}</td></tr>
+                                <tr><th class="bg-light">Teaching Experience</th><td>{{ staff.total_experience_years }} Years</td></tr>
+                                <tr><th class="bg-light">Date of Joining</th><td>{{ staff.date_of_joining|default:"Not on file" }}</td></tr>
+                                <tr><th class="bg-light">Employment Status</th><td><span class="badge bg-success">{{ staff.employment_status }}</span></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="erpnext-card h-100">
+                        <div class="card-header bg-light py-3">
+                            <h6 class="card-title mb-0 fw-bold"><i class="fas fa-user-tie text-primary me-2"></i>Institutional Leadership & HOD Appointments</h6>
+                        </div>
+                        <div class="card-body">
+                            {% for appt in hod_history %}
+                                <div class="p-3 mb-2 border rounded {% if appt.is_active %}bg-light border-success{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-1">HOD: {{ appt.department.name }} ({{ appt.department.code }})</h6>
+                                        <span class="badge {% if appt.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {% if appt.is_active %}Current HOD{% else %}Former HOD{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted">Order No: <code>{{ appt.appointment_order_no }}</code></div>
+                                    <div class="small text-muted">Tenure: {{ appt.start_date }} to {{ appt.end_date|default:"Present" }}</div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted small py-3 text-center">No past or active Head of Department (HOD) appointments recorded.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB B: Teaching Allocations & Subjects -->
+        <div class="tab-pane fade" id="fac-teaching" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-book text-primary me-2"></i>Current Teaching Allocations & Courses</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Subject Name</th>
+                                    <th>Department / Course</th>
+                                    <th>Total Enrolled Students</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sub in subjects %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ sub.name }}</strong></td>
+                                    <td>{{ sub.course.name }}</td>
+                                    <td><span class="badge bg-primary">Active Subject</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No active subjects assigned to this faculty member.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB C: Research & Publications -->
+        <div class="tab-pane fade" id="fac-research" role="tabpanel">
+            <div class="erpnext-card mb-4">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-book-open text-purple me-2"></i>Research Publications (Scopus / Web of Science / UGC Care)</h6>
+                    <span class="badge bg-purple" style="background:#6f42c1; color:white;">{{ publications.count }} Papers</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Paper Title</th>
+                                    <th>Type</th>
+                                    <th>Journal / Conference</th>
+                                    <th>Indexing</th>
+                                    <th>DOI / ISSN</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pub in publications %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ pub.title }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ pub.publication_type }}</span></td>
+                                    <td>{{ pub.journal_or_conference_name }}</td>
+                                    <td><span class="badge bg-info text-dark">{{ pub.indexing }}</span></td>
+                                    <td><code>{{ pub.doi|default:pub.issn_isbn|default:"-" }}</code></td>
+                                    <td>{{ pub.publication_date|default:pub.academic_year }}</td>
+                                    <td>
+                                        {% if pub.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Submitted</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No research publications on file.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patents -->
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-lightbulb text-warning me-2"></i>Intellectual Property & Patents</h6>
+                    <span class="badge bg-warning text-dark">{{ patents.count }} Patents</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Patent Title</th>
+                                    <th>Application No</th>
+                                    <th>Office</th>
+                                    <th>Status</th>
+                                    <th>Filing Date</th>
+                                    <th>Grant Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pat in patents %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ pat.title }}</strong></td>
+                                    <td><code>{{ pat.application_number }}</code></td>
+                                    <td>{{ pat.patent_office }}</td>
+                                    <td>
+                                        <span class="badge {% if pat.status == 'Granted' %}bg-success{% elif pat.status == 'Published' %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                            {{ pat.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ pat.filing_date|default:"-" }}</td>
+                                    <td>{{ pat.grant_date|default:"-" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">No patents filed or granted on file.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB D: Faculty Development Programmes -->
+        <div class="tab-pane fade" id="fac-fdp" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-certificate text-info me-2"></i>Faculty Development Programmes, STTPs & Workshops</h6>
+                    <span class="badge bg-info">{{ trainings.count }} Programmes</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Programme Title</th>
+                                    <th>Type</th>
+                                    <th>Role</th>
+                                    <th>Organizing Institution</th>
+                                    <th>Duration</th>
+                                    <th>Dates</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tr in trainings %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ tr.title }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ tr.training_type }}</span></td>
+                                    <td><span class="badge bg-light text-dark border">{{ tr.role }}</span></td>
+                                    <td>{{ tr.organizing_body }}</td>
+                                    <td>{{ tr.duration_days }} days</td>
+                                    <td>{{ tr.start_date|default:"-" }} to {{ tr.end_date|default:"-" }}</td>
+                                    <td>
+                                        {% if tr.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No FDPs or training programmes on file.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB E: Guided Student Projects -->
+        <div class="tab-pane fade" id="fac-guidance" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-project-diagram text-primary me-2"></i>Guided Capstone & Research Projects</h6>
+                    <span class="badge bg-primary">{{ guided_projects.count }} Projects</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Project Title</th>
+                                    <th>Type</th>
+                                    <th>Technical Domain</th>
+                                    <th>Owning Programme</th>
+                                    <th>Student Team</th>
+                                    <th>Lifecycle Status</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for proj in guided_projects %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ proj.title }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ proj.project_type }}</span></td>
+                                    <td>{{ proj.technical_domain }}</td>
+                                    <td>{{ proj.primary_programme.code }}</td>
+                                    <td>
+                                        {% for s in proj.students.all %}
+                                            <a href="{% url 'student_profile' s.id %}" class="badge bg-light text-dark border text-decoration-none">
+                                                {{ s.admin.first_name }} {{ s.admin.last_name }}
+                                            </a>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if proj.lifecycle_status == 'Completed' %}bg-success{% elif proj.lifecycle_status == 'Published/Awarded' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                            {{ proj.lifecycle_status }}
+                                        </span>
+                                    </td>
+                                    <td><strong>{{ proj.total_score }} / 100</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No student projects guided yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB F: International Contributions -->
+        <div class="tab-pane fade" id="fac-intl" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-globe text-success me-2"></i>International Research, Conferences & Foreign Collaborations</h6>
+                    <span class="badge bg-success">{{ international_contributions.count }} Contributions</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Activity / Title</th>
+                                    <th>Category</th>
+                                    <th>Foreign Institution</th>
+                                    <th>Country</th>
+                                    <th>Date</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ic in international_contributions %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ ic.title }}</strong></td>
+                                    <td><span class="badge bg-info text-dark">{{ ic.contribution_type }}</span></td>
+                                    <td>{{ ic.foreign_institution }}</td>
+                                    <td><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ ic.country }}</td>
+                                    <td>{{ ic.event_date|default:"-" }}</td>
+                                    <td>
+                                        {% if ic.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">No international contributions recorded for this faculty member.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}

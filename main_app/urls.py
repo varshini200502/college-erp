@@ -3,7 +3,8 @@ from django.urls import path
 from main_app.EditResultView import EditResultView
 from . import (
     hod_views, staff_views, student_views, views,
-    principal_views, finance_views, hr_views, accreditation_views
+    principal_views, finance_views, hr_views, accreditation_views,
+    registrar_views
 )
 
 urlpatterns = [
@@ -45,6 +46,10 @@ urlpatterns = [
     path("staff/manage/", hod_views.manage_staff, name='manage_staff'),
     path("student/manage/", hod_views.manage_student, name='manage_student'),
     path("course/manage/", hod_views.manage_course, name='manage_course'),
+    path("department/manage/", hod_views.manage_departments, name='manage_departments'),
+    path("programme/manage/", hod_views.manage_programmes, name='manage_programmes'),
+    path("regulations/manage/", hod_views.manage_regulations, name='manage_regulations'),
+    path("projects/manage/", hod_views.manage_projects, name='manage_projects'),
     path("subject/manage/", hod_views.manage_subject, name='manage_subject'),
     path("staff/edit/<int:staff_id>", hod_views.edit_staff, name='edit_staff'),
     path("staff/delete/<int:staff_id>", hod_views.delete_staff, name='delete_staff'),
@@ -124,10 +129,34 @@ urlpatterns = [
     path("hr/recruitments/", hr_views.recruitment_list, name='recruitment_list'),
 
     # Accreditation Portal (Role 7: NAAC & NBA)
+    path("accreditation/", accreditation_views.accreditation_home),
     path("accreditation/home/", accreditation_views.accreditation_home, name='accreditation_home'),
     path("accreditation/naac/criterion/<int:criterion_id>/", accreditation_views.naac_criterion_detail, name='naac_criterion_detail'),
     path("accreditation/naac/report/", accreditation_views.naac_report, name='naac_report'),
+    path("accreditation/nba/", accreditation_views.nba_programs_list),
     path("accreditation/nba/programs/", accreditation_views.nba_programs_list, name='nba_programs_list'),
     path("accreditation/nba/program/<int:program_id>/", accreditation_views.nba_program_detail, name='nba_program_detail'),
     path("accreditation/nba/mapping/<int:subject_id>/", accreditation_views.subject_co_po_mapping, name='subject_co_po_mapping'),
+    path("accreditation/nba/sar/<int:program_id>/", accreditation_views.nba_sar_export, name='nba_sar_export'),
+    path("accreditation/sar/export/<int:program_id>/", accreditation_views.nba_sar_export),
+
+    # Registrar Portal (Role 8: Onboarding, Directories & Academic Structure)
+    path("registrar/home/", registrar_views.registrar_home, name='registrar_home'),
+    path("registrar/student/add/", registrar_views.registrar_add_student, name='registrar_add_student'),
+    path("registrar/faculty/add/", registrar_views.registrar_add_faculty, name='registrar_add_faculty'),
+    path("registrar/students/", registrar_views.registrar_student_directory, name='registrar_student_directory'),
+    path("registrar/faculty/", registrar_views.registrar_faculty_directory, name='registrar_faculty_directory'),
+    path("registrar/departments/", registrar_views.registrar_manage_departments, name='registrar_manage_departments'),
+    path("registrar/programmes/", registrar_views.registrar_manage_programmes, name='registrar_manage_programmes'),
+    path("registrar/batches/", registrar_views.registrar_manage_batches, name='registrar_manage_batches'),
+    path("registrar/structure/", registrar_views.registrar_academic_structure, name='registrar_academic_structure'),
+    path("registrar/appoint_hod/", registrar_views.registrar_appoint_hod, name='registrar_appoint_hod'),
+
+    # Institutional Detailed Profiles (Phases 2 & 3)
+    path("student/profile/<int:student_id>/", principal_views.student_profile, name='student_profile'),
+    path("faculty/profile/<int:staff_id>/", principal_views.faculty_profile, name='faculty_profile'),
+
+    # Principal Innovation & Overseas Analytics (Phases 4 & 5)
+    path("principal/projects/", principal_views.principal_project_analytics, name='principal_projects'),
+    path("principal/international-analytics/", principal_views.principal_international_analytics, name='principal_international'),
 ]

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views import View
 from django.contrib import messages
-from .models import Subject, Staff, Student, StudentResult
+from .models import Subject, Staff, Student, StudentResult, MarksCorrectionLog
 from .forms import EditResultForm
 from django.urls import reverse
 
@@ -28,13 +28,38 @@ class EditResultView(View):
                 exam = form.cleaned_data.get('exam')
                 # Validating
                 result = StudentResult.objects.get(student=student, subject=subject)
+
+                # Check if finalized - block edits for non-admin staff
+                if result.is_finalized and not (request.user.is_superuser or str(getattr(request.user, 'user_type', '')) in ['1', '4']):
+                    messages.error(request, "Marks for this subject have been finalized and locked. Edits are blocked.")
+                    return redirect(reverse('edit_student_result'))
+
+                prev_test = result.test
+                prev_exam = result.exam
+
                 result.exam = exam
                 result.test = test
                 result.save()
-                messages.success(request, "Result Updated")
+
+                # Audit log for marks correction
+                MarksCorrectionLog.objects.create(
+                    result=result,
+                    changed_by=request.user if request.user.is_authenticated else None,
+                    previous_test=prev_test,
+                    new_test=result.test,
+                    previous_exam=prev_exam,
+                    new_exam=result.exam,
+                    previous_assignment=result.assignment,
+                    new_assignment=result.assignment,
+                    previous_practical=result.practical,
+                    new_practical=result.practical,
+                    reason=request.POST.get('reason', 'Updated via Edit Result form')
+                )
+
+                messages.success(request, "Result Updated with audit log")
                 return redirect(reverse('edit_student_result'))
             except Exception as e:
-                messages.warning(request, "Result Could Not Be Updated")
+                messages.warning(request, f"Result Could Not Be Updated: {e}")
         else:
             messages.warning(request, "Result Could Not Be Updated")
         return render(request, "staff_template/edit_student_result.html", context)

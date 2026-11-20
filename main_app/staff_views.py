@@ -75,7 +75,7 @@ def staff_take_attendance(request):
     return render(request, 'staff_template/staff_take_attendance.html', context)
 
 
-@csrf_exempt
+@role_required(['2', '1', '4'])
 def get_students(request):
     subject_id = request.POST.get('subject')
     session_id = request.POST.get('session')
@@ -95,7 +95,7 @@ def get_students(request):
         return JsonResponse([], safe=False)
 
 
-@csrf_exempt
+@role_required(['2', '1', '4'])
 def save_attendance(request):
     student_data = request.POST.get('student_ids')
     att_date = request.POST.get('date')
@@ -136,7 +136,7 @@ def staff_update_attendance(request):
     return render(request, 'staff_template/staff_update_attendance.html', context)
 
 
-@csrf_exempt
+@role_required(['2', '1', '4'])
 def get_student_attendance(request):
     attendance_date_id = request.POST.get('attendance_date_id')
     try:
@@ -155,7 +155,7 @@ def get_student_attendance(request):
         return JsonResponse([], safe=False)
 
 
-@csrf_exempt
+@role_required(['2', '1', '4'])
 def update_attendance(request):
     student_data = request.POST.get('student_ids')
     att_id = request.POST.get('date')
@@ -261,7 +261,7 @@ def staff_add_result(request):
     return render(request, "staff_template/staff_add_result.html", context)
 
 
-@csrf_exempt
+@role_required(['2', '1', '4'])
 def fetch_student_result(request):
     try:
         subject_id = request.POST.get('subject')
@@ -478,9 +478,12 @@ def staff_view_profile(request):
                 if password:
                     admin.set_password(password)
                 if passport:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    admin.profile_pic = fs.url(filename)
+                    try:
+                        fs = FileSystemStorage()
+                        filename = fs.save(passport.name, passport)
+                        admin.profile_pic = fs.url(filename)
+                    except Exception:
+                        pass
                 admin.first_name = first_name
                 admin.last_name = last_name
                 admin.address = address

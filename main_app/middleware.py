@@ -33,7 +33,9 @@ class LoginCheckMiddleWare(MiddlewareMixin):
                     target = 'principal_home' if user_type == '4' else 'admin_home'
                     return redirect(reverse(target))
             elif user_type == '2':  # Staff / Faculty
-                if modulename in ['main_app.student_views', 'main_app.hod_views', 'main_app.principal_views', 'main_app.finance_views', 'main_app.hr_views']:
+                if modulename in ['main_app.student_views', 'main_app.principal_views', 'main_app.finance_views', 'main_app.hr_views']:
+                    return redirect(reverse('staff_home'))
+                if modulename == 'main_app.hod_views' and not getattr(user, 'is_hod', False):
                     return redirect(reverse('staff_home'))
             elif user_type == '3':  # Student
                 # Allow student to download their own fee receipt
@@ -47,6 +49,9 @@ class LoginCheckMiddleWare(MiddlewareMixin):
             elif user_type == '7':  # Accreditation
                 if modulename in ['main_app.student_views', 'main_app.staff_views', 'main_app.finance_views', 'main_app.hr_views']:
                     return redirect(reverse('accreditation_home'))
+            elif user_type == '8':  # Registrar
+                if modulename in ['main_app.student_views', 'main_app.staff_views', 'main_app.finance_views']:
+                    return redirect(reverse('registrar_home'))
             elif user_type == '6':  # Deprecated HR role
                 return redirect(reverse('login_page'))
         else:

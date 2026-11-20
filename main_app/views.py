@@ -8,6 +8,8 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.views.decorators.csrf import csrf_exempt
 
+from .decorators import role_required
+
 from .EmailBackend import EmailBackend
 from .models import Attendance, Session, Subject, SystemAuditLog
 
@@ -20,6 +22,7 @@ def get_role_home_url(user_type):
         '4': 'principal_home',
         '5': 'finance_home',
         '7': 'accreditation_home',
+        '8': 'registrar_home',
     }
     return reverse(role_map.get(str(user_type), 'admin_home'))
 
@@ -137,7 +140,7 @@ def logout_user(request):
     return redirect("/")
 
 
-@csrf_exempt
+@role_required(['1', '2', '4'])
 def get_attendance(request):
     subject_id = request.POST.get('subject')
     session_id = request.POST.get('session')

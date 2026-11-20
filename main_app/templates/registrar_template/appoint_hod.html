@@ -1,0 +1,92 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-file-signature mr-2"></i>Official HOD Appointment Order</h3>
+                    </div>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="department_id">Department <span class="text-danger">*</span></label>
+                                <select name="department_id" id="department_id" class="form-control" required>
+                                    <option value="">-- Select Department --</option>
+                                    {% for dept in departments %}
+                                        <option value="{{ dept.id }}">{{ dept.name }} ({{ dept.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="faculty_id">Faculty Member to Appoint as HOD <span class="text-danger">*</span></label>
+                                <select name="faculty_id" id="faculty_id" class="form-control" required>
+                                    <option value="">-- Select Faculty --</option>
+                                    {% for f in faculty_list %}
+                                        <option value="{{ f.id }}">{{ f.admin.first_name }} {{ f.admin.last_name }} ({{ f.designation }} - {{ f.primary_department.code|default:"General" }})</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle mr-1"></i>Faculty appointed as HOD retain all normal teaching, marks entry, and leave privileges.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="order_no">Official Order Reference Number</label>
+                                <input type="text" name="order_no" id="order_no" class="form-control" placeholder="e.g. REG/ORD/CSE/2024/04">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="start_date">Appointment Effective Date</label>
+                                <input type="date" name="start_date" id="start_date" class="form-control">
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle mr-1"></i>Issue Official Order</button>
+                            <a href="{% url 'registrar_home' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card card-secondary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-history mr-2"></i>Current Active Appointments</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Department</th>
+                                    <th>Current Head</th>
+                                    <th>Order Reference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in active_appointments %}
+                                <tr>
+                                    <td><strong>{{ appt.department.code }}</strong></td>
+                                    <td>{{ appt.faculty }}</td>
+                                    <td><small>{{ appt.appointment_order_no }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">No active appointments.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

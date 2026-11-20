@@ -1,0 +1,160 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'registrar_home' %}">Registrar</a></li>
+    <li class="breadcrumb-item active">Add Student</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold"><i class="fas fa-user-plus text-primary me-2"></i>Official Student Onboarding Form</h5>
+                    <a href="{% url 'registrar_student_directory' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Student Directory
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <!-- Personal Account Details -->
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="fas fa-id-card me-2"></i>1. Account & Identity Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">First Name <span class="text-danger">*</span></label>
+                                <input type="text" name="first_name" class="form-control" required placeholder="e.g. Rahul">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" name="last_name" class="form-control" required placeholder="e.g. Sharma">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Gender <span class="text-danger">*</span></label>
+                                <select name="gender" class="form-select" required>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                    <option value="O">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Institutional Email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" class="form-control" required placeholder="student@college.edu">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Login Password <span class="text-danger">*</span></label>
+                                <input type="password" name="password" class="form-control" required placeholder="Set secure initial password">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Residential Address</label>
+                                <input type="text" name="address" class="form-control" placeholder="Street, City, State, PIN">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Passport Photo</label>
+                                <input type="file" name="profile_pic" class="form-control" accept="image/*">
+                            </div>
+                        </div>
+
+                        <!-- Academic Enrollment Details -->
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="fas fa-graduation-cap me-2"></i>2. Academic Programme & Batch Registration</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Department / Course <span class="text-danger">*</span></label>
+                                <select name="course" class="form-select" required>
+                                    <option value="">Select Department / Course</option>
+                                    {% for c in courses %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Degree Programme</label>
+                                <select name="programme" class="form-select">
+                                    <option value="">Select Degree Programme</option>
+                                    {% for p in programmes %}
+                                        <option value="{{ p.id }}">{{ p.name }} ({{ p.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Admission Batch</label>
+                                <select name="batch" class="form-select">
+                                    <option value="">Select Batch</option>
+                                    {% for b in batches %}
+                                        <option value="{{ b.id }}">{{ b.programme.code }} - Batch {{ b.batch_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Current Semester</label>
+                                <select name="current_semester" class="form-select">
+                                    {% for sem in "12345678" %}
+                                        <option value="{{ sem }}">Semester {{ sem }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Section Division</label>
+                                <input type="text" name="section" class="form-control" value="A" placeholder="e.g. A, B">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Roll Number</label>
+                                <input type="text" name="roll_number" class="form-control" placeholder="e.g. 21CS045">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Admission Number</label>
+                                <input type="text" name="admission_number" class="form-control" placeholder="e.g. ADM-2024-001">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Academic Session</label>
+                                <select name="session" class="form-select">
+                                    <option value="">Select Session</option>
+                                    {% for s in sessions %}
+                                        <option value="{{ s.id }}">{{ s.start_year }} - {{ s.end_year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Student Phone</label>
+                                <input type="text" name="phone" class="form-control" placeholder="+91 9876543210">
+                            </div>
+                        </div>
+
+                        <!-- Parent / Guardian Information -->
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="fas fa-user-friends me-2"></i>3. Parent / Guardian Details</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Parent / Guardian Name</label>
+                                <input type="text" name="parent_name" class="form-control" placeholder="e.g. Ramesh Sharma">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Parent Contact Phone</label>
+                                <input type="text" name="parent_phone" class="form-control" placeholder="+91 9876543211">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                            <a href="{% url 'registrar_student_directory' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary fw-bold px-4">
+                                <i class="fas fa-check-circle me-1"></i> Register Student & Create Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

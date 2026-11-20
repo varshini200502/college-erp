@@ -1,0 +1,93 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'registrar_home' %}">Registrar</a></li>
+    <li class="breadcrumb-item active">Academic Structure</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="erpnext-card mb-4 bg-light">
+        <div class="card-body p-4">
+            <h4 class="fw-bold text-dark mb-1"><i class="fas fa-sitemap text-primary me-2"></i>Institutional Academic Hierarchy</h4>
+            <p class="text-muted mb-0">Structural mapping of Academic & Allied Departments, accredited Degree Programmes, active Admission Cohorts (Batches), Section Divisions, and appointed Department Leadership.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for d in departments %}
+        <div class="col-lg-6">
+            <div class="erpnext-card h-100 shadow-sm border-top border-4 {% if d.dept_type == 'Academic' %}border-primary{% elif d.dept_type == 'Allied' %}border-info{% else %}border-secondary{% endif %}">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge {% if d.dept_type == 'Academic' %}bg-primary{% elif d.dept_type == 'Allied' %}bg-info{% else %}bg-secondary{% endif %} me-2">
+                            {{ d.dept_type }}
+                        </span>
+                        <h5 class="fw-bold d-inline mb-0">{{ d.name }} ({{ d.code }})</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- HOD Status -->
+                    <div class="p-2 mb-3 bg-light rounded d-flex align-items-center">
+                        <i class="fas fa-user-tie fa-2x text-muted me-3"></i>
+                        <div>
+                            <div class="small text-muted text-uppercase fw-bold">Department Head (HOD)</div>
+                            {% if d.current_hod %}
+                                <div class="fw-bold text-success"><i class="fas fa-check-circle me-1"></i>{{ d.current_hod }} ({{ d.current_hod.designation }})</div>
+                            {% else %}
+                                <div class="text-warning small"><i class="fas fa-exclamation-circle me-1"></i>No active HOD appointment on file</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Programmes under Department -->
+                    <h6 class="fw-bold text-secondary mb-2"><i class="fas fa-graduation-cap me-1"></i>Degree Programmes ({{ d.programmes.count }})</h6>
+                    <div class="list-group list-group-flush mb-3">
+                        {% for p in d.programmes.all %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ p.name }}</strong>
+                                    <span class="badge bg-secondary ms-1">{{ p.code }}</span>
+                                    <span class="badge bg-light text-dark border ms-1">{{ p.degree_level }} • {{ p.duration_years }}y</span>
+                                </div>
+                                <span class="badge {% if 'Accredited' in p.nba_status %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                    {{ p.nba_status }}
+                                </span>
+                            </div>
+
+                            <!-- Batches -->
+                            {% if p.batches.all %}
+                            <div class="mt-2 ps-3 border-start">
+                                <small class="text-muted fw-bold">Cohorts & Sections:</small>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% for b in p.batches.all %}
+                                        <span class="badge bg-light text-dark border">
+                                            Batch {{ b.batch_name }} ({{ b.sections.count }} Sec)
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-muted small py-2">No degree programmes affiliated.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light py-2 text-end">
+                    <a href="{% url 'registrar_manage_programmes' %}" class="btn btn-xs btn-outline-primary">Manage Programmes</a>
+                    <a href="{% url 'registrar_appoint_hod' %}" class="btn btn-xs btn-outline-warning">Appoint HOD</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted py-5">
+            No departments found.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}

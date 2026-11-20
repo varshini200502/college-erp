@@ -1,0 +1,238 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item active">International & Overseas Analytics</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Top Summary Banner -->
+    <div class="erpnext-card mb-4" style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: white;">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3 class="fw-bold mb-1"><i class="fas fa-globe-americas me-2"></i>Institutional International & Overseas Progression</h3>
+                    <p class="mb-0 text-white-50">Global footprint of student higher studies admissions abroad, international exchange programmes, overseas internships, and faculty international research collaborations.</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <span class="badge bg-light text-dark fs-6 p-2 me-2">
+                        <i class="fas fa-user-graduate text-primary me-1"></i> {{ total_student_overseas }} Student Global Records
+                    </span>
+                    <span class="badge bg-light text-dark fs-6 p-2">
+                        <i class="fas fa-chalkboard-teacher text-success me-1"></i> {{ total_faculty_intl }} Faculty Global Records
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Higher Studies Abroad</div>
+                        <h2 class="fw-bold text-primary mb-0">{{ higher_studies_count }}</h2>
+                        <small class="text-muted">Master's / Ph.D. in Foreign Universities</small>
+                    </div>
+                    <div class="stat-icon bg-primary text-white rounded-circle p-3">
+                        <i class="fas fa-university fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Overseas Internships</div>
+                        <h2 class="fw-bold text-success mb-0">{{ internships_count }}</h2>
+                        <small class="text-muted">Global Industry / Research Experience</small>
+                    </div>
+                    <div class="stat-icon bg-success text-white rounded-circle p-3">
+                        <i class="fas fa-plane-departure fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">International Exchange</div>
+                        <h2 class="fw-bold text-info mb-0">{{ exchange_count }}</h2>
+                        <small class="text-muted">Student Semester Abroad Programmes</small>
+                    </div>
+                    <div class="stat-icon bg-info text-white rounded-circle p-3">
+                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Faculty Global Tie-Ups</div>
+                        <h2 class="fw-bold text-warning mb-0">{{ total_faculty_intl }}</h2>
+                        <small class="text-muted">International Conferences & Fellowships</small>
+                    </div>
+                    <div class="stat-icon bg-warning text-white rounded-circle p-3">
+                        <i class="fas fa-handshake fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Country Filter Toolbar -->
+    <div class="erpnext-card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Filter by Destination Country</label>
+                    <select name="country" class="form-select form-select-sm">
+                        <option value="">All Countries</option>
+                        {% for c in all_countries %}
+                            <option value="{{ c }}" {% if selected_country == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Outcome Type</label>
+                    <select name="outcome" class="form-select form-select-sm">
+                        <option value="">All Outcomes</option>
+                        <option value="Higher Studies" {% if selected_outcome == 'Higher Studies' %}selected{% endif %}>Higher Studies Abroad</option>
+                        <option value="Overseas Internship" {% if selected_outcome == 'Overseas Internship' %}selected{% endif %}>Overseas Internship</option>
+                        <option value="International Exchange" {% if selected_outcome == 'International Exchange' %}selected{% endif %}>International Exchange</option>
+                        <option value="Overseas Employment" {% if selected_outcome == 'Overseas Employment' %}selected{% endif %}>Overseas Employment</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Search Candidate / University</label>
+                    <input type="text" name="search" class="form-control form-control-sm" value="{{ search_query }}" placeholder="Student, Faculty, University...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-sm btn-primary w-100 me-2"><i class="fas fa-filter me-1"></i> Filter</button>
+                    <a href="{% url 'principal_international' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Overseas Progression Table -->
+    <div class="erpnext-card mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold"><i class="fas fa-user-graduate text-primary me-2"></i>Student Overseas Progression Records ({{ student_records.count }})</h5>
+            <span class="badge bg-primary">Verified Evidence Available</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Student Name</th>
+                            <th>Department</th>
+                            <th>Progression Type</th>
+                            <th>Foreign University / Organization</th>
+                            <th>Destination Country</th>
+                            <th>Degree / Programme</th>
+                            <th>Admission Year</th>
+                            <th>Scholarship</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in student_records %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ s.student.admin.first_name }} {{ s.student.admin.last_name }}</strong>
+                                <div class="text-muted small">{{ s.student.admin.email }}</div>
+                            </td>
+                            <td>{{ s.student.course.name }}</td>
+                            <td><span class="badge bg-secondary">{{ s.progression_type }}</span></td>
+                            <td><strong>{{ s.foreign_university }}</strong></td>
+                            <td><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ s.country }}</td>
+                            <td>{{ s.degree_programme|default:"Graduate Degree" }}</td>
+                            <td>{{ s.admission_year }}</td>
+                            <td>{{ s.scholarship_details|default:"Self-funded" }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'student_profile' s.student.id %}#overseas" class="btn btn-xs btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i> Profile
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">No student overseas progression records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Faculty International Contributions Table -->
+    <div class="erpnext-card mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold"><i class="fas fa-chalkboard-teacher text-success me-2"></i>Faculty International Contributions & Global Collaborations ({{ faculty_records.count }})</h5>
+            <span class="badge bg-success">Institutional MoUs & Fellowships</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Faculty Member</th>
+                            <th>Department</th>
+                            <th>Contribution Category</th>
+                            <th>Activity / Title</th>
+                            <th>Foreign Institution</th>
+                            <th>Country</th>
+                            <th>Date</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in faculty_records %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ f.staff.admin.first_name }} {{ f.staff.admin.last_name }}</strong>
+                                <div class="text-muted small">{{ f.staff.admin.email }}</div>
+                            </td>
+                            <td>{{ f.staff.primary_department.name|default:f.staff.course.name }}</td>
+                            <td><span class="badge bg-info text-dark">{{ f.contribution_type }}</span></td>
+                            <td><strong>{{ f.title }}</strong></td>
+                            <td>{{ f.foreign_institution }}</td>
+                            <td><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ f.country }}</td>
+                            <td>{{ f.event_date|default:"-" }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'faculty_profile' f.staff.id %}#fac-intl" class="btn btn-xs btn-outline-success">
+                                    <i class="fas fa-external-link-alt me-1"></i> Profile
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">No faculty international contributions found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

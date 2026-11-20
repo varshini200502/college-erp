@@ -30,6 +30,8 @@
 
     {% elif user.user_type == '7' %}
                     Accreditation Coordinator
+                {% elif user.user_type == '8' %}
+                    Registrar
                 {% else %}
                     User
                 {% endif %}
@@ -96,6 +98,19 @@
             <a href="{% url 'system_audit_logs' %}" class="nav-link {% if request.path == '/system/audit-logs/' %}active{% endif %}">
                 <i class="nav-icon fas fa-shield-alt"></i>
                 <span class="nav-text">System Audit Trails</span>
+            </a>
+        </div>
+        <h6 class="nav-section-title">Innovation & Progression</h6>
+        <div class="nav-item">
+            <a href="{% url 'principal_projects' %}" class="nav-link {% if 'principal/projects' in request.path %}active{% endif %}">
+                <i class="nav-icon fas fa-project-diagram"></i>
+                <span class="nav-text">Project & Domain Analytics</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'principal_international' %}" class="nav-link {% if 'principal/international' in request.path %}active{% endif %}">
+                <i class="nav-icon fas fa-globe-americas"></i>
+                <span class="nav-text">International Progression</span>
             </a>
         </div>
 
@@ -318,6 +333,19 @@
                 <span class="nav-text">System Audit Trails</span>
             </a>
         </div>
+        <h6 class="nav-section-title">Innovation & Progression</h6>
+        <div class="nav-item">
+            <a href="{% url 'principal_projects' %}" class="nav-link {% if 'principal/projects' in request.path %}active{% endif %}">
+                <i class="nav-icon fas fa-project-diagram"></i>
+                <span class="nav-text">Project & Domain Analytics</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'principal_international' %}" class="nav-link {% if 'principal/international' in request.path %}active{% endif %}">
+                <i class="nav-icon fas fa-globe-americas"></i>
+                <span class="nav-text">International Progression</span>
+            </a>
+        </div>
         <div class="nav-item">
             <a href="{% url 'admin_view_attendance' %}" class="nav-link {% if request.path == '/attendance/view/' %}active{% endif %}">
                 <i class="nav-icon fas fa-calendar-check"></i>
@@ -466,6 +494,76 @@
             <a href="{% url 'view_books' %}" class="nav-link {% if request.path == '/student/viewbooks/' %}active{% endif %}">
                 <i class="nav-icon fas fa-book"></i>
                 <span class="nav-text">Library Catalog</span>
+            </a>
+        </div>
+
+    {% elif user.user_type == '8' %}
+        <!-- ==================== REGISTRAR NAVIGATION ==================== -->
+        <h6 class="nav-section-title">Registrar Portal</h6>
+        <div class="nav-item">
+            <a href="{% url 'registrar_home' %}" class="nav-link {% if request.path == '/registrar/home/' %}active{% endif %}">
+                <i class="nav-icon fas fa-tachometer-alt"></i>
+                <span class="nav-text">Registrar Dashboard</span>
+            </a>
+        </div>
+
+        <h6 class="nav-section-title">Academic Onboarding</h6>
+        <div class="nav-item">
+            <a href="{% url 'registrar_add_student' %}" class="nav-link {% if request.path == '/registrar/student/add/' %}active{% endif %}">
+                <i class="nav-icon fas fa-user-plus"></i>
+                <span class="nav-text">Add Student</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'registrar_add_faculty' %}" class="nav-link {% if request.path == '/registrar/faculty/add/' %}active{% endif %}">
+                <i class="nav-icon fas fa-chalkboard-teacher"></i>
+                <span class="nav-text">Add Faculty</span>
+            </a>
+        </div>
+
+        <h6 class="nav-section-title">Institutional Directories</h6>
+        <div class="nav-item">
+            <a href="{% url 'registrar_student_directory' %}" class="nav-link {% if request.path == '/registrar/students/' %}active{% endif %}">
+                <i class="nav-icon fas fa-user-graduate"></i>
+                <span class="nav-text">Student Directory</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'registrar_faculty_directory' %}" class="nav-link {% if request.path == '/registrar/faculty/' %}active{% endif %}">
+                <i class="nav-icon fas fa-users-cog"></i>
+                <span class="nav-text">Faculty Directory</span>
+            </a>
+        </div>
+
+        <h6 class="nav-section-title">Academic Structure</h6>
+        <div class="nav-item">
+            <a href="{% url 'registrar_manage_departments' %}" class="nav-link {% if request.path == '/registrar/departments/' %}active{% endif %}">
+                <i class="nav-icon fas fa-university"></i>
+                <span class="nav-text">Departments</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'registrar_manage_programmes' %}" class="nav-link {% if request.path == '/registrar/programmes/' %}active{% endif %}">
+                <i class="nav-icon fas fa-graduation-cap"></i>
+                <span class="nav-text">Degree Programmes</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'registrar_manage_batches' %}" class="nav-link {% if request.path == '/registrar/batches/' %}active{% endif %}">
+                <i class="nav-icon fas fa-layer-group"></i>
+                <span class="nav-text">Batches & Sections</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'registrar_academic_structure' %}" class="nav-link {% if request.path == '/registrar/structure/' %}active{% endif %}">
+                <i class="nav-icon fas fa-sitemap"></i>
+                <span class="nav-text">Institutional Structure</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'registrar_appoint_hod' %}" class="nav-link {% if request.path == '/registrar/appoint_hod/' %}active{% endif %}">
+                <i class="nav-icon fas fa-user-tie"></i>
+                <span class="nav-text">HOD Appointments</span>
             </a>
         </div>
     {% endif %}

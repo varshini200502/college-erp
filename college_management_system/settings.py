@@ -14,35 +14,90 @@ import dj_database_url
 import os
 from pathlib import Path
 
-os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'f2zx8*lb*em*-*b+!&1lpp&$_9q9kmkar+l3x90do@s(+sr&x7')
+# Load local environment configuration from .env file if present
+ENV_PATH = BASE_DIR / '.env'
+if ENV_PATH.exists():
+    try:
+        with open(ENV_PATH, 'r', encoding='utf-8') as _env_file:
+            for _line in _env_file:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+    except Exception:
+        pass
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Defaults to False if running on Render; defaults to True for local development
 DEBUG = os.environ.get('DEBUG', 'True' if 'RENDER' not in os.environ else 'False').lower() in ('true', '1', 'yes')
 
+if DEBUG:
+    os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'f2zx8*lb*em*-*b+!&1lpp&$_9q9kmkar+l3x90do@s(+sr&x7'
+    else:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured("SECRET_KEY environment variable must be set in production (DEBUG=False).")
+
+# Vercel deployment detection
+IS_VERCEL = bool(os.environ.get('VERCEL'))
+
 # Hostname and domain configuration
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver', '.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver', 'college-erp-xwqr.onrender.com', '.vercel.app']
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Vercel deployment and preview domain detection
+for v_env in ('VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL'):
+    v_val = os.environ.get(v_env)
+    if v_val:
+        clean_v_host = v_val.replace('https://', '').replace('http://', '').split('/')[0].strip()
+        if clean_v_host and clean_v_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(clean_v_host)
 
 EXTRA_ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS')
 if EXTRA_ALLOWED_HOSTS:
-    ALLOWED_HOSTS.extend([h.strip() for h in EXTRA_ALLOWED_HOSTS.split(',') if h.strip()])
+    for h in EXTRA_ALLOWED_HOSTS.split(','):
+        clean_h = h.strip().replace('https://', '').replace('http://', '').split('/')[0].strip()
+        if clean_h and clean_h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(clean_h)
 
-# CSRF Trusted Origins for HTTPS on Render
-CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
-if RENDER_EXTERNAL_HOSTNAME:
-    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+# CSRF Trusted Origins for HTTPS on Render and Vercel
+# Supports both raw domain format (for Django 3.x is_same_domain) and https:// scheme format
+CSRF_TRUSTED_ORIGINS = [
+    'college-erp-xwqr.onrender.com',
+    'https://college-erp-xwqr.onrender.com',
+    '.vercel.app',
+    'https://*.vercel.app'
+]
+
+for v_env in ('VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL'):
+    v_val = os.environ.get(v_env)
+    if v_val:
+        clean_v_host = v_val.replace('https://', '').replace('http://', '').split('/')[0].strip()
+        if clean_v_host:
+            for entry in (clean_v_host, f'https://{clean_v_host}'):
+                if entry not in CSRF_TRUSTED_ORIGINS:
+                    CSRF_TRUSTED_ORIGINS.append(entry)
+
 EXTRA_CSRF = os.environ.get('CSRF_TRUSTED_ORIGINS')
 if EXTRA_CSRF:
-    CSRF_TRUSTED_ORIGINS.extend([c.strip() for c in EXTRA_CSRF.split(',') if c.strip()])
+    for c in EXTRA_CSRF.split(','):
+        clean_c = c.strip()
+        if clean_c:
+            raw_c = clean_c.replace('https://', '').replace('http://', '').split('/')[0].strip()
+            https_c = f'https://{raw_c}' if not clean_c.startswith('https://') else clean_c
+            for entry in (raw_c, https_c):
+                if entry not in CSRF_TRUSTED_ORIGINS:
+                    CSRF_TRUSTED_ORIGINS.append(entry)
 
 # Google reCAPTCHA Configuration
 RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '')
@@ -69,15 +124,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serves static files directly at maximum performance
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    # Third Party Middleware (WhiteNoise serves static files directly)
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 
     # My Middleware
     'main_app.middleware.LoginCheckMiddleWare',
@@ -113,7 +167,7 @@ DATABASES = {
     }
 }
 
-# Production: If DATABASE_URL is defined (Neon PostgreSQL), connect via dj_database_url with SSL
+# Production / Staging: If DATABASE_URL is defined, connect via dj_database_url with SSL
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     DATABASES['default'] = dj_database_url.config(
@@ -121,25 +175,28 @@ if DATABASE_URL:
         conn_max_age=600,
         ssl_require=True
     )
+elif os.environ.get('VERCEL'):
+    # Ephemeral SQLite fallback for Vercel preview/build when remote DATABASE_URL is not configured
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': '/tmp/db.sqlite3',
+    }
 
 # Password validation
-if not DEBUG:
-    AUTH_PASSWORD_VALIDATORS = []
-else:
-    AUTH_PASSWORD_VALIDATORS = [
-        {
-            'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-        },
-    ]
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
@@ -150,12 +207,18 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+if os.environ.get('VERCEL'):
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static')
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+if os.environ.get('VERCEL'):
+    MEDIA_ROOT = '/tmp/media'
+else:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 AUTH_USER_MODEL = 'main_app.CustomUser'
 AUTHENTICATION_BACKENDS = ['main_app.EmailBackend.EmailBackend']
@@ -174,6 +237,9 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 31536000))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Email Configuration (Reads from environment variables; no hardcoded credentials)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

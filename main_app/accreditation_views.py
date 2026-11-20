@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from django.urls import reverse
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg
@@ -16,6 +17,9 @@ from .models import (
     InstitutionalDocument, SystemAuditLog, StudentResult, StudentFeeAccount
 )
 from .decorators import role_required
+from .obe_engine import OBEEngine
+from .sar_export import SARExportEngine
+from .naac_automation import sync_all_naac_criteria, sync_criterion
 
 
 def seed_naac_criteria_if_needed():
@@ -75,6 +79,73 @@ def accreditation_home(request):
     return render(request, 'accreditation_template/accreditation_home.html', context)
 
 
+CRITERION_RESPONSIBILITY_MAP = {
+    1: {
+        "title": "Curricular Aspects",
+        "owning_sections": "Academic Section, Academic Departments, HODs",
+        "data_submitter": "Department NAAC Coordinators / HODs",
+        "internal_reviewer": "Curriculum Committee / Accreditation Coordinator",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Syllabus copies, BOS minutes, academic calendars, curriculum feedback forms, analysis reports."
+    },
+    2: {
+        "title": "Teaching-Learning and Evaluation",
+        "owning_sections": "HODs, Faculty Members, Examination Section",
+        "data_submitter": "Course Instructors / Examination Cell",
+        "internal_reviewer": "Academic Audit Committee",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Student-faculty ratio sheets, attendance registers, internal assessment rubrics, end-semester exam result sheets."
+    },
+    3: {
+        "title": "Research, Innovations and Extension",
+        "owning_sections": "Research Coordinator, Faculty, Department R&D Cells",
+        "data_submitter": "Faculty Researchers / Department R&D Coordinators",
+        "internal_reviewer": "Dean (R&D) / Research Committee",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Scopus/WoS publication links, DOI certificates, patent grant certificates, seed grant orders, MoUs."
+    },
+    4: {
+        "title": "Infrastructure and Learning Resources",
+        "owning_sections": "Infrastructure Section, Central Library, IT & Computer Center",
+        "data_submitter": "Librarian / Systems Admin / Estate Officer",
+        "internal_reviewer": "Library & IT Committee",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Library ILMS automation screenshots, stock verification logs, internet bandwidth certificates, AMC orders."
+    },
+    5: {
+        "title": "Student Support and Progression",
+        "owning_sections": "Student Welfare Section, Training & Placement Cell, Scholarship Cell",
+        "data_submitter": "TPO / Student Welfare Officer / Scholarship Officer",
+        "internal_reviewer": "Student Affairs Committee",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Placement offer letters, competitive exam scorecards (GATE/GRE), higher studies admission letters, scholarship disbursal lists."
+    },
+    6: {
+        "title": "Governance, Leadership and Management",
+        "owning_sections": "Principal's Office, Administration, HR Section, Finance Section",
+        "data_submitter": "Administrative Officer / Finance Officer / HR Coordinator",
+        "internal_reviewer": "Governing Body / IQAC Core Team",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Strategic plan documents, audited financial statements, budget sanction orders, faculty appraisal records, IQAC minutes."
+    },
+    7: {
+        "title": "Institutional Values and Best Practices",
+        "owning_sections": "IQAC Coordinator, Green Campus Committee, Ethics & Distinctiveness Cell",
+        "data_submitter": "IQAC Lead / Committee Conveners",
+        "internal_reviewer": "Institutional Values Committee",
+        "iqac_validator": "IQAC Coordinator",
+        "final_approver": "Principal",
+        "evidence_guidance": "Energy audit / green audit reports, gender equity event photos, institutional distinctiveness write-ups, best practice case studies."
+    }
+}
+
+
 # ==============================================================================
 # NAAC ACCREDITATION MANAGEMENT
 # ==============================================================================
@@ -84,6 +155,7 @@ def naac_criterion_detail(request, criterion_id):
     criterion = get_object_or_404(NAACCriterion, id=criterion_id)
     metrics = criterion.metrics.all().order_by('metric_code')
     courses = Course.objects.all()
+    responsibility_info = CRITERION_RESPONSIBILITY_MAP.get(criterion.criterion_number, {})
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -93,6 +165,7 @@ def naac_criterion_detail(request, criterion_id):
             desc = request.POST.get('description', '')
             acad_year = request.POST.get('academic_year', '2024-2025')
             dept_id = request.POST.get('department')
+            responsible_dept = request.POST.get('responsible_department', '')
             quant_val = float(request.POST.get('quantitative_value') or 0.0)
             notes = request.POST.get('qualitative_notes', '')
             doc = request.FILES.get('supporting_document')
@@ -106,6 +179,9 @@ def naac_criterion_detail(request, criterion_id):
                 description=desc,
                 academic_year=acad_year,
                 department=dept,
+                responsible_department=responsible_dept or (responsibility_info.get('owning_sections', '')),
+                responsible_owner=request.user,
+                stage="DATA_ENTRY",
                 quantitative_value=quant_val,
                 qualitative_notes=notes,
                 supporting_document=doc,
@@ -120,12 +196,71 @@ def naac_criterion_detail(request, criterion_id):
             messages.success(request, f"Metric {code} added successfully.")
             return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
 
+        elif action == 'submit_for_review':
+            metric_id = request.POST.get('metric_id')
+            metric = get_object_or_404(NAACMetricData, id=metric_id)
+            doc = request.FILES.get('supporting_document')
+            if doc:
+                metric.supporting_document = doc
+            notes = request.POST.get('qualitative_notes')
+            if notes:
+                metric.qualitative_notes = notes
+            metric.stage = "SUBMITTED"
+            metric.responsible_owner = request.user
+            metric.save()
+            messages.success(request, f"Metric {metric.metric_code} submitted for peer / coordinator review.")
+            return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
+
+        elif action == 'return_correction':
+            metric_id = request.POST.get('metric_id')
+            reason = request.POST.get('return_reason', '').strip()
+            if not reason:
+                messages.error(request, "A reason must be provided when returning a metric for correction.")
+                return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
+            metric = get_object_or_404(NAACMetricData, id=metric_id)
+            metric.stage = "RETURNED"
+            metric.return_reason = reason
+            metric.reviewer = request.user
+            metric.is_verified = False
+            metric.save()
+            messages.warning(request, f"Metric {metric.metric_code} returned for correction with feedback: '{reason}'")
+            return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
+
+        elif action == 'verify_internal':
+            metric_id = request.POST.get('metric_id')
+            comments = request.POST.get('review_comments', '').strip()
+            metric = get_object_or_404(NAACMetricData, id=metric_id)
+            from django.utils import timezone
+            metric.stage = "VERIFIED_INTERNAL"
+            metric.reviewer = request.user
+            metric.review_comments = comments
+            metric.internal_verified_at = timezone.now()
+            metric.save()
+            messages.success(request, f"Metric {metric.metric_code} verified internally by {request.user}.")
+            return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
+
+        elif action == 'approve_principal':
+            if str(request.user.user_type) != '4' and not request.user.is_superuser:
+                messages.error(request, "Only the Principal can grant final institutional approval for NAAC metrics.")
+                return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
+            metric_id = request.POST.get('metric_id')
+            metric = get_object_or_404(NAACMetricData, id=metric_id)
+            from django.utils import timezone
+            metric.stage = "APPROVED_PRINCIPAL"
+            metric.is_verified = True
+            metric.verified_by = request.user
+            metric.principal_approved_at = timezone.now()
+            metric.save()
+            messages.success(request, f"Metric {metric.metric_code} granted final institutional approval by Principal.")
+            return redirect(reverse('naac_criterion_detail', args=[criterion.id]))
+
         elif action == 'verify_metric':
             metric_id = request.POST.get('metric_id')
             decision = request.POST.get('decision') == 'true'
             metric = get_object_or_404(NAACMetricData, id=metric_id)
             metric.is_verified = decision
             metric.verified_by = request.user if decision else None
+            metric.stage = "APPROVED_PRINCIPAL" if decision else "DATA_ENTRY"
             metric.save()
 
             status_str = "Verified" if decision else "Unverified"
@@ -143,6 +278,7 @@ def naac_criterion_detail(request, criterion_id):
         'criterion': criterion,
         'metrics': metrics,
         'courses': courses,
+        'responsibility_info': responsibility_info,
     }
     return render(request, 'accreditation_template/naac_criterion_detail.html', context)
 
@@ -150,76 +286,9 @@ def naac_criterion_detail(request, criterion_id):
 def sync_naac_data_from_erp(criterion):
     """
     Intelligent cross-module synchronization for NAAC criteria.
-    Pulls data directly from Student, Faculty, Finance, and Research records.
+    Delegates to NAAC automation engine.
     """
-    curr_year = "2024-2025"
-
-    if criterion.criterion_number == 1:
-        # Curricular Aspects
-        total_courses = Course.objects.count()
-        total_subjects = Subject.objects.count()
-        NAACMetricData.objects.update_or_create(
-            criterion=criterion, metric_code="1.1.1", academic_year=curr_year,
-            defaults={
-                'title': 'Curricula Developed and Implemented by Institution',
-                'quantitative_value': total_courses,
-                'qualitative_notes': f"Total Programs offered: {total_courses}, Total Courses/Subjects taught: {total_subjects}."
-            }
-        )
-
-    elif criterion.criterion_number == 2:
-        # Teaching-Learning & Evaluation
-        total_students = Student.objects.filter(status='Active').count()
-        total_faculty = Staff.objects.filter(employment_status='Active').count()
-        sfr = round(total_students / total_faculty, 1) if total_faculty > 0 else 0
-        NAACMetricData.objects.update_or_create(
-            criterion=criterion, metric_code="2.2.2", academic_year=curr_year,
-            defaults={
-                'title': 'Student - Full Time Teacher Ratio',
-                'quantitative_value': sfr,
-                'qualitative_notes': f"Active Students: {total_students}, Active Faculty: {total_faculty}. Student-Teacher Ratio: {sfr}:1."
-            }
-        )
-
-    elif criterion.criterion_number == 3:
-        # Research, Innovations and Extension
-        pubs_count = FacultyPublication.objects.count()
-        patents_count = FacultyPatent.objects.count()
-        NAACMetricData.objects.update_or_create(
-            criterion=criterion, metric_code="3.3.1", academic_year=curr_year,
-            defaults={
-                'title': 'Number of Research Papers Published per Teacher in the Journals',
-                'quantitative_value': pubs_count,
-                'qualitative_notes': f"Total faculty research papers: {pubs_count}, Total published patents: {patents_count}."
-            }
-        )
-
-    elif criterion.criterion_number == 4:
-        # Infrastructure and Learning Resources
-        library_books = Course.objects.count()  # Can expand
-        infra_expenses = CollegeExpense.objects.filter(category='Infrastructure').aggregate(s=Sum('amount'))['s'] or 0.0
-        NAACMetricData.objects.update_or_create(
-            criterion=criterion, metric_code="4.1.4", academic_year=curr_year,
-            defaults={
-                'title': 'Average Percentage of Expenditure Incurred on Maintenance of Infrastructure',
-                'quantitative_value': infra_expenses,
-                'qualitative_notes': f"Total infrastructure maintenance expenditure: ₹{infra_expenses:.2f}."
-            }
-        )
-
-    elif criterion.criterion_number == 5:
-        # Student Support and Progression
-        placements = StudentPlacement.objects.filter(is_higher_studies=False).count()
-        higher_studies = StudentPlacement.objects.filter(is_higher_studies=True).count()
-        scholarships = StudentFeeAccount.objects.aggregate(s=Sum('scholarship_amount'))['s'] or 0.0
-        NAACMetricData.objects.update_or_create(
-            criterion=criterion, metric_code="5.2.1", academic_year=curr_year,
-            defaults={
-                'title': 'Percentage of Placement of Outgoing Students and Progression to Higher Education',
-                'quantitative_value': placements + higher_studies,
-                'qualitative_notes': f"Placements: {placements}, Higher Education: {higher_studies}, Scholarships disbursed: ₹{scholarships:.2f}."
-            }
-        )
+    return sync_criterion(criterion)
 
 
 @role_required(['7', '4', '1'])
@@ -446,52 +515,44 @@ def subject_co_po_mapping(request, subject_id):
     return render(request, 'accreditation_template/co_po_mapping.html', context)
 
 
-def calculate_subject_attainment(subject):
+def calculate_subject_attainment(subject, direct_weight=0.80, indirect_weight=0.20, session=None):
     """
-    Computes direct and indirect CO attainment based on actual student results.
-    Methodology follows standard NBA guidelines:
-    - Threshold: Target score (e.g. 60% of marks).
-    - Level 3: >= 70% students score >= threshold.
-    - Level 2: >= 60% students score >= threshold.
-    - Level 1: >= 50% students score >= threshold.
-    - Level 0: < 50% students.
+    Computes direct and indirect CO attainment based on actual student results
+    using configurable institution-approved OBE methodology via OBEEngine.
     """
-    results = StudentResult.objects.filter(subject=subject)
-    total_students = results.count()
-    if total_students == 0:
-        return
+    if not session:
+        session = Session.objects.first()
+    if not session:
+        return []
+    return OBEEngine.compute_subject_co_attainments(
+        subject=subject,
+        session=session,
+        direct_weight=direct_weight,
+        indirect_weight=indirect_weight
+    )
 
-    cos = subject.course_outcomes.all()
-    session = Session.objects.first()
 
-    for co in cos:
-        # Check students scoring above target threshold
-        # Max marks assumed 100 for total
-        target_score = (co.target_percentage / 100.0) * 100.0
-        passed_students = results.filter(total__gte=target_score).count()
-        pct_passed = (passed_students / total_students) * 100.0
+@role_required(['7', '4', '1', '2', '8'])
+def nba_sar_export(request, program_id):
+    """
+    Self Assessment Report (SAR) Data Export Endpoint.
+    Supports ?format=json (default) and ?format=csv.
+    """
+    format_type = request.GET.get('format', 'json').lower()
+    program = get_object_or_404(NBAProgram, id=program_id)
+    academic_year = request.GET.get('academic_year')
 
-        if pct_passed >= 70:
-            direct_level = 3.0
-        elif pct_passed >= 60:
-            direct_level = 2.0
-        elif pct_passed >= 50:
-            direct_level = 1.0
-        else:
-            direct_level = 0.5
+    if format_type == 'csv':
+        csv_data = SARExportEngine.export_sar_csv(program, academic_year=academic_year)
+        response = HttpResponse(csv_data, content_type='text/csv; charset=utf-8')
+        course_name = program.course.name.replace(' ', '_') if program.course else f"Prog_{program.id}"
+        response['Content-Disposition'] = f'attachment; filename="NBA_SAR_{course_name}_{academic_year or "current"}.csv"'
+        return response
+    else:
+        json_data = SARExportEngine.export_sar_json(program, academic_year=academic_year)
+        response = HttpResponse(json_data, content_type='application/json; charset=utf-8')
+        if request.GET.get('download') == '1':
+            course_name = program.course.name.replace(' ', '_') if program.course else f"Prog_{program.id}"
+            response['Content-Disposition'] = f'attachment; filename="NBA_SAR_{course_name}_{academic_year or "current"}.json"'
+        return response
 
-        # Indirect attainment (surveys/feedback, default 2.5)
-        indirect_level = 2.5
-        overall = round((0.8 * direct_level) + (0.2 * indirect_level), 2)
-        achieved = overall >= 2.0
-
-        if session:
-            COAttainmentRecord.objects.update_or_create(
-                subject=subject, session=session, course_outcome=co,
-                defaults={
-                    'direct_attainment': direct_level,
-                    'indirect_attainment': indirect_level,
-                    'overall_attainment': overall,
-                    'target_achieved': achieved,
-                }
-            )

@@ -45,6 +45,7 @@ class CustomUser(AbstractUser):
         (5, "Finance"),
         (6, "HR"),
         (7, "Accreditation"),
+        (8, "Registrar"),
     )
     GENDER = [("M", "Male"), ("F", "Female"), ("O", "Other")]
 
@@ -72,6 +73,12 @@ class CustomUser(AbstractUser):
             return roles.get(int(self.user_type), "User")
         except (ValueError, TypeError):
             return "User"
+
+    @property
+    def is_hod(self):
+        if str(self.user_type) == '2' and hasattr(self, 'staff'):
+            return self.staff.is_hod
+        return False
 
 
 class Admin(models.Model):
@@ -109,8 +116,163 @@ class AccreditationCoordinator(models.Model):
         return f"Accreditation: {self.admin}"
 
 
+class Registrar(models.Model):
+    admin = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    office_room = models.CharField(max_length=50, blank=True, default="")
+    appointment_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Registrar: {self.admin}"
+
+
+# ==============================================================================
+# INSTITUTIONAL ACADEMIC STRUCTURE (PHASE 1B)
+# ==============================================================================
+
+class Department(models.Model):
+    DEPT_TYPE_CHOICES = [
+        ("Academic", "Academic Department"),
+        ("Allied", "Allied / Basic Sciences / Humanities"),
+        ("Administrative", "Administrative / Support Unit"),
+    ]
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=150)
+    dept_type = models.CharField(max_length=30, choices=DEPT_TYPE_CHOICES, default="Academic")
+    description = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+    @property
+    def current_hod(self):
+        appt = self.hod_appointments.filter(is_active=True).first()
+        return appt.faculty if appt else None
+
+
+class Programme(models.Model):
+    DEGREE_CHOICES = [
+        ("UG", "Undergraduate (B.Tech / B.E. / B.Sc)"),
+        ("PG", "Postgraduate (M.Tech / M.E. / M.Sc / MBA / MCA)"),
+        ("Diploma", "Diploma"),
+        ("PhD", "Doctoral (Ph.D.)"),
+    ]
+    NBA_STATUS_CHOICES = [
+        ("Not Accredited", "Not Accredited"),
+        ("Eligible", "Eligible for Accreditation"),
+        ("Provisionally Accredited", "Provisionally Accredited"),
+        ("Accredited", "Accredited"),
+    ]
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=150)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="programmes")
+    degree_level = models.CharField(max_length=20, choices=DEGREE_CHOICES, default="UG")
+    duration_years = models.IntegerField(default=4)
+    total_semesters = models.IntegerField(default=8)
+    nba_status = models.CharField(max_length=30, choices=NBA_STATUS_CHOICES, default="Eligible")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class Batch(models.Model):
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="batches")
+    batch_name = models.CharField(max_length=50)  # e.g., '2021-2025'
+    admission_year = models.IntegerField()
+    graduating_year = models.IntegerField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('programme', 'admission_year')
+
+    def __str__(self):
+        return f"{self.programme.code} - Batch {self.batch_name}"
+
+
+class Section(models.Model):
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="sections")
+    name = models.CharField(max_length=10)  # e.g., 'A', 'B'
+    semester = models.IntegerField(default=1)
+    academic_year = models.CharField(max_length=20, default="2024-2025")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('batch', 'name', 'semester', 'academic_year')
+
+    def __str__(self):
+        return f"{self.batch.programme.code} Batch {self.batch.batch_name} - Sec {self.name} (Sem {self.semester})"
+
+
+class HODAppointment(models.Model):
+    faculty = models.ForeignKey('Staff', on_delete=models.CASCADE, related_name="hod_appointments")
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="hod_appointments")
+    appointed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="hod_appointments_made")
+    appointment_order_no = models.CharField(max_length=100, blank=True, default="")
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Former"
+        return f"HOD: {self.faculty} -> {self.department.name} [{status}]"
+
+
+class FacultyProgrammeAffiliation(models.Model):
+    faculty = models.ForeignKey('Staff', on_delete=models.CASCADE, related_name="programme_affiliations")
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="faculty_affiliations")
+    is_primary_home = models.BooleanField(default=True)
+    allocation_role = models.CharField(
+        max_length=50,
+        choices=[
+            ("Teaching", "Teaching Faculty"),
+            ("Mentor", "Class Mentor / Counselor"),
+            ("Project Guide", "Project Guide"),
+            ("Coordinator", "Programme Coordinator"),
+        ],
+        default="Teaching"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('faculty', 'programme', 'allocation_role')
+
+    def __str__(self):
+        home_tag = " [Home]" if self.is_primary_home else " [Cross-teaching]"
+        return f"{self.faculty} -> {self.programme.code} ({self.allocation_role}){home_tag}"
+
+
+class AlliedDepartmentAffiliation(models.Model):
+    allied_department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="allied_programmes")
+    parent_programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="allied_departments")
+    notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('allied_department', 'parent_programme')
+
+    def __str__(self):
+        return f"Allied: {self.allied_department.code} supports {self.parent_programme.code}"
+
+
 class Course(models.Model):
     name = models.CharField(max_length=120)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name="legacy_courses")
+    programme = models.ForeignKey(Programme, on_delete=models.SET_NULL, null=True, blank=True, related_name="legacy_courses")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -147,6 +309,9 @@ class Student(models.Model):
     parent_phone = models.CharField(max_length=20, blank=True, null=True)
     current_semester = models.IntegerField(default=1)
     section = models.CharField(max_length=10, blank=True, null=True, default="A")
+    programme = models.ForeignKey(Programme, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")
+    batch = models.ForeignKey(Batch, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")
+    academic_section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")
     status = models.CharField(max_length=20, default="Active", choices=STATUS_CHOICES)
     sgpa = models.FloatField(default=0.0)
     cgpa = models.FloatField(default=0.0)
@@ -211,6 +376,15 @@ class Staff(models.Model):
     total_experience_years = models.FloatField(default=0.0)
     highest_qualification = models.CharField(max_length=100, blank=True, null=True)
     specialization = models.CharField(max_length=200, blank=True, null=True)
+    primary_department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name="faculty_members")
+
+    @property
+    def is_hod(self):
+        return self.hod_appointments.filter(is_active=True).exists()
+
+    @property
+    def active_hod_departments(self):
+        return [appt.department for appt in self.hod_appointments.filter(is_active=True).select_related('department')]
 
     def __str__(self):
         return self.admin.first_name + " " + self.admin.last_name
@@ -777,17 +951,34 @@ class NAACCriterion(models.Model):
 
 
 class NAACMetricData(models.Model):
+    STAGE_CHOICES = [
+        ("NOT_STARTED", "1. Not Started"),
+        ("DATA_ENTRY", "2. Data Entry in Progress"),
+        ("SUBMITTED", "3. Submitted for Review"),
+        ("RETURNED", "4. Returned for Correction"),
+        ("VERIFIED_INTERNAL", "5. Verified Internally"),
+        ("APPROVED_PRINCIPAL", "6. Approved by Principal"),
+    ]
+
     criterion = models.ForeignKey(NAACCriterion, on_delete=models.CASCADE, related_name="metrics")
     metric_code = models.CharField(max_length=20)  # e.g. "1.1.1", "3.2.1"
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True, null=True)
     academic_year = models.CharField(max_length=20, default="2024-2025")
     department = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
+    responsible_department = models.CharField(max_length=150, blank=True, default="")
+    responsible_owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_naac_metrics")
+    stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default="DATA_ENTRY")
+    reviewer = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_naac_metrics")
+    review_comments = models.TextField(blank=True, default="")
+    return_reason = models.TextField(blank=True, default="")
     quantitative_value = models.FloatField(default=0.0)
     qualitative_notes = models.TextField(blank=True, null=True)
     supporting_document = models.FileField(upload_to="naac_evidence/", blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     verified_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    internal_verified_at = models.DateTimeField(null=True, blank=True)
+    principal_approved_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -800,6 +991,7 @@ class NAACMetricData(models.Model):
 
 class NBAProgram(models.Model):
     course = models.OneToOneField(Course, on_delete=models.CASCADE, related_name="nba_program")
+    programme = models.ForeignKey('Programme', on_delete=models.SET_NULL, null=True, blank=True, related_name="nba_programs")
     program_name = models.CharField(max_length=200)
     coordinator = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True)
     tier = models.CharField(max_length=20, default="Tier II", choices=[("Tier I", "Tier I"), ("Tier II", "Tier II")])
@@ -908,6 +1100,224 @@ class ContinuousImprovementAction(models.Model):
 
     def __str__(self):
         return f"Action on {self.outcome_code} ({self.academic_year}): Gap {self.gap:.2f}"
+
+
+# ==============================================================================
+# ACADEMIC REGULATIONS, LIFECYCLE & PROJECTS (PHASE 2 & PHASE 5)
+# ==============================================================================
+
+class AcademicRegulation(models.Model):
+    REGULATION_STATUS = [
+        ("Provisional", "Provisional (Awaiting Official Approval)"),
+        ("Approved", "Approved by Academic Council"),
+    ]
+    code = models.CharField(max_length=50)  # e.g., 'R20-CSE', 'R22-ECE'
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="regulations")
+    effective_year = models.IntegerField()  # e.g., 2022
+    # Thresholds explicitly UNSET (null=True) until officially approved regulations are verified and saved
+    min_attendance_percentage = models.FloatField(null=True, blank=True, default=None, help_text="Minimum attendance % required for normal exam eligibility")
+    condonation_min_percentage = models.FloatField(null=True, blank=True, default=None, help_text="Minimum attendance % eligible for condonation on medical/valid grounds")
+    condonation_fee = models.FloatField(null=True, blank=True, default=None, help_text="Institutional condonation fee")
+    min_credits_for_promotion = models.IntegerField(null=True, blank=True, default=None, help_text="Minimum cumulative credits required for next academic year")
+    max_backlogs_allowed = models.IntegerField(null=True, blank=True, default=None, help_text="Maximum backlogs allowed for semester promotion")
+    min_cgpa_for_award = models.FloatField(null=True, blank=True, default=None, help_text="Minimum CGPA required for degree award")
+    approval_status = models.CharField(max_length=30, choices=REGULATION_STATUS, default="Provisional")
+    approved_by = models.CharField(max_length=150, blank=True, default="")
+    approved_date = models.DateField(null=True, blank=True)
+    regulatory_source_reference = models.CharField(max_length=250, blank=True, default="", help_text="Official institutional Gazette / Council resolution reference")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('programme', 'code')
+
+    def __str__(self):
+        return f"{self.code} ({self.programme.code}) - {self.approval_status}"
+
+
+class StudentAcademicHistory(models.Model):
+    PROMOTION_CHOICES = [
+        ("Pending", "Pending Evaluation"),
+        ("Promoted", "Promoted to Next Semester"),
+        ("Passed", "Completed Program / Graduated"),
+        ("Detained_Attendance", "Detained due to Attendance Shortage"),
+        ("Detained_Credits", "Detained due to Credit Shortage"),
+        ("Condoned", "Condoned on Approved Grounds"),
+    ]
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="academic_history")
+    semester = models.IntegerField()
+    academic_year = models.CharField(max_length=20)  # e.g., '2023-2024'
+    credits_registered = models.FloatField(default=0.0)
+    credits_earned = models.FloatField(default=0.0)
+    sgpa = models.FloatField(default=0.0)
+    cgpa = models.FloatField(default=0.0)
+    attendance_percentage = models.FloatField(default=0.0)
+    promotion_status = models.CharField(max_length=30, choices=PROMOTION_CHOICES, default="Pending")
+    fee_cleared = models.BooleanField(default=False)
+    library_cleared = models.BooleanField(default=False)
+    remarks = models.TextField(blank=True, default="")
+    verified_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="verified_academic_histories")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('student', 'semester', 'academic_year')
+        ordering = ['student', 'semester']
+
+    def __str__(self):
+        return f"{self.student} - Sem {self.semester} ({self.academic_year}): {self.promotion_status}"
+
+
+class StudentProject(models.Model):
+    PROJECT_TYPES = [
+        ("Mini", "Mini Project"),
+        ("Major", "Major Capstone Project"),
+        ("Interdisciplinary", "Interdisciplinary Capstone Project"),
+        ("Industry", "Industry Sponsored Project"),
+    ]
+    LIFECYCLE_STATUS = [
+        ("Proposed", "1. Proposed"),
+        ("Approved", "2. Approved"),
+        ("In Progress", "3. In Progress"),
+        ("Under Review", "4. Under Review"),
+        ("Completed", "5. Completed"),
+        ("Published/Awarded", "6. Published/Patented/Awarded"),
+        ("Archived", "7. Archived"),
+    ]
+    DOMAINS = [
+        ("Artificial Intelligence and Machine Learning", "Artificial Intelligence and Machine Learning"),
+        ("Computer Vision and Image Processing", "Computer Vision and Image Processing"),
+        ("Natural Language Processing", "Natural Language Processing"),
+        ("Data Science and Analytics", "Data Science and Analytics"),
+        ("Web Development", "Web Development"),
+        ("Mobile Application Development", "Mobile Application Development"),
+        ("Cybersecurity and Ethical Hacking", "Cybersecurity and Ethical Hacking"),
+        ("Cloud Computing", "Cloud Computing"),
+        ("DevOps", "DevOps"),
+        ("Internet of Things", "Internet of Things"),
+        ("Embedded Systems", "Embedded Systems"),
+        ("Robotics and Automation", "Robotics and Automation"),
+        ("Blockchain", "Blockchain"),
+        ("Signal Processing", "Signal Processing"),
+        ("Database Systems", "Database Systems"),
+        ("Software Engineering", "Software Engineering"),
+        ("Interdisciplinary and Other Domains", "Interdisciplinary and Other Domains"),
+    ]
+
+    title = models.CharField(max_length=250)
+    project_type = models.CharField(max_length=30, choices=PROJECT_TYPES, default="Major")
+    academic_year = models.CharField(max_length=20)
+    primary_programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="primary_projects")
+    secondary_programme = models.ForeignKey(Programme, on_delete=models.SET_NULL, null=True, blank=True, related_name="secondary_projects")
+    guide = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name="guided_projects")
+    co_guide = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name="co_guided_projects")
+    students = models.ManyToManyField(Student, related_name="projects")
+    
+    # Detailed project information & portfolio tracking
+    problem_statement = models.TextField(blank=True, default="")
+    objectives = models.TextField(blank=True, default="")
+    technical_domain = models.CharField(max_length=100, choices=DOMAINS, default="Artificial Intelligence and Machine Learning")
+    technical_subdomain = models.CharField(max_length=150, blank=True, default="")
+    technologies = models.CharField(max_length=250, blank=True, default="")
+    tools_languages = models.CharField(max_length=250, blank=True, default="")
+    methodology = models.TextField(blank=True, default="")
+    architecture_details = models.TextField(blank=True, default="")
+    current_stage = models.CharField(max_length=100, blank=True, default="Development")
+    lifecycle_status = models.CharField(max_length=40, choices=LIFECYCLE_STATUS, default="In Progress")
+    milestones = models.TextField(blank=True, default="")
+    latest_progress_update = models.TextField(blank=True, default="")
+    expected_completion_date = models.DateField(null=True, blank=True)
+    actual_completion_date = models.DateField(null=True, blank=True)
+    repository_url = models.URLField(blank=True, null=True)
+    demo_url = models.URLField(blank=True, null=True)
+    publications_patents_awards = models.TextField(blank=True, default="")
+
+    rubric_score_review1 = models.FloatField(default=0.0)
+    rubric_score_review2 = models.FloatField(default=0.0)
+    rubric_score_final = models.FloatField(default=0.0)
+    total_score = models.FloatField(default=0.0)
+    abstract = models.TextField(blank=True, default="")
+    is_nba_credited = models.BooleanField(default=True, help_text="Counted only once under primary programme to prevent double-counting")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        self.total_score = float(self.rubric_score_review1) + float(self.rubric_score_review2) + float(self.rubric_score_final)
+        super(StudentProject, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.title} ({self.primary_programme.code if self.primary_programme else 'General'})"
+
+
+class StudentInternship(models.Model):
+    INTERNSHIP_TYPES = [
+        ("Industry", "Industry Internship"),
+        ("Research", "Research / Academic Internship"),
+        ("Government", "Government / PSU Internship"),
+        ("NGO", "NGO / Social Sector"),
+        ("Virtual", "Virtual / Remote Internship"),
+    ]
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="internships")
+    company_name = models.CharField(max_length=200)
+    internship_type = models.CharField(max_length=50, choices=INTERNSHIP_TYPES, default="Industry")
+    domain = models.CharField(max_length=100, default="Software Engineering")
+    duration_weeks = models.IntegerField(default=8)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    work_performed = models.TextField(blank=True, default="")
+    skills_acquired = models.TextField(blank=True, default="")
+    certificate = models.FileField(upload_to="internships/", blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student} - {self.company_name} ({self.domain})"
+
+
+class StudentOverseasProgression(models.Model):
+    PROGRESSION_TYPES = [
+        ("Higher Studies", "Higher Studies Abroad"),
+        ("International Exchange", "International Exchange Programme"),
+        ("Overseas Internship", "Overseas Internship"),
+        ("International Research", "International Research Project"),
+        ("Overseas Employment", "Overseas Employment"),
+        ("Foreign Collaboration", "Foreign Collaboration"),
+    ]
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="overseas_progressions")
+    progression_type = models.CharField(max_length=50, choices=PROGRESSION_TYPES, default="Higher Studies")
+    foreign_university = models.CharField(max_length=250)
+    country = models.CharField(max_length=100)
+    degree_programme = models.CharField(max_length=200, blank=True, default="")
+    admission_year = models.CharField(max_length=20, default="2025")
+    scholarship_details = models.CharField(max_length=250, blank=True, default="")
+    supporting_evidence = models.FileField(upload_to="overseas_evidence/", blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student} - {self.progression_type} at {self.foreign_university}, {self.country}"
+
+
+class FacultyInternationalContribution(models.Model):
+    CONTRIBUTION_TYPES = [
+        ("Conference", "International Conference Presentation"),
+        ("Collaboration", "Foreign University Collaboration"),
+        ("Visiting Faculty", "Visiting Faculty / Scholar"),
+        ("Overseas Research", "Overseas Research Fellowship"),
+        ("Publication", "International Joint Publication"),
+    ]
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name="international_contributions")
+    contribution_type = models.CharField(max_length=50, choices=CONTRIBUTION_TYPES, default="Conference")
+    title = models.CharField(max_length=300)
+    foreign_institution = models.CharField(max_length=250)
+    country = models.CharField(max_length=100)
+    event_date = models.DateField(null=True, blank=True)
+    details = models.TextField(blank=True, default="")
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.staff} - {self.contribution_type} at {self.foreign_institution}, {self.country}"
 
 
 # ==============================================================================

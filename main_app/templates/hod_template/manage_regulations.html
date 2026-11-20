@@ -1,0 +1,90 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary card-outline">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title"><i class="fas fa-book-open mr-2"></i>Institutional Academic Regulations</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-info">{{ regulations|length }} Registered Regulations</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-bordered table-striped table-hover mb-0">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Code</th>
+                                    <th>Programme</th>
+                                    <th>Effective Year</th>
+                                    <th>Status</th>
+                                    <th>Min Attendance</th>
+                                    <th>Condonation Range</th>
+                                    <th>Min Credits</th>
+                                    <th>Min CGPA</th>
+                                    <th>Regulatory Reference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reg in regulations %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ reg.code }}</strong></td>
+                                    <td><span class="badge badge-primary">{{ reg.programme.code }}</span></td>
+                                    <td>{{ reg.effective_year }}</td>
+                                    <td>
+                                        {% if reg.approval_status == 'Approved' %}
+                                            <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i>Approved by Council</span>
+                                        {% else %}
+                                            <span class="badge badge-warning"><i class="fas fa-exclamation-triangle mr-1"></i>Provisional (Unapproved)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if reg.min_attendance_percentage %}
+                                            {{ reg.min_attendance_percentage }}%
+                                        {% else %}
+                                            <span class="text-muted font-italic">Unset (Pending)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if reg.condonation_min_percentage %}
+                                            {{ reg.condonation_min_percentage }}% - {{ reg.min_attendance_percentage }}%
+                                        {% else %}
+                                            <span class="text-muted font-italic">Unset</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if reg.min_credits_for_promotion %}
+                                            {{ reg.min_credits_for_promotion }}
+                                        {% else %}
+                                            <span class="text-muted font-italic">Unset</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if reg.min_cgpa_for_award %}
+                                            {{ reg.min_cgpa_for_award }}
+                                        {% else %}
+                                            <span class="text-muted font-italic">Unset</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><small class="text-muted">{{ reg.regulatory_source_reference|default:"Institutional Gazette" }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-4">No academic regulations registered.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

@@ -9,88 +9,151 @@
 {% endblock breadcrumb %}
 
 {% block content %}
-<div class="erpnext-card mb-4">
-    <div class="card-body">
-        <form method="GET" class="row g-3 align-items-center">
-            <div class="col-md-4">
-                <label class="form-label small fw-bold">Department / Course Filter</label>
-                <select name="course" class="form-select form-select-sm">
-                    <option value="">All Departments</option>
-                    {% for c in courses %}
-                        <option value="{{ c.id }}" {% if selected_course == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-bold">Student Status</label>
-                <select name="status" class="form-select form-select-sm">
-                    <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
-                    <option value="Graduated" {% if selected_status == 'Graduated' %}selected{% endif %}>Graduated</option>
-                    <option value="Alumni" {% if selected_status == 'Alumni' %}selected{% endif %}>Alumni</option>
-                    <option value="Inactive" {% if selected_status == 'Inactive' %}selected{% endif %}>Inactive</option>
-                </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-sm btn-primary me-2"><i class="fas fa-filter me-1"></i> Filter</button>
-                <a href="{% url 'principal_students' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="erpnext-card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0">Enrolled Students ({{ students.count }})</h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Student Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Semester / Section</th>
-                        <th>Roll / Adm No</th>
-                        <th>Status</th>
-                        <th>Fee Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in students %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>
-                            <strong>{{ s.admin.first_name }} {{ s.admin.last_name }}</strong>
-                        </td>
-                        <td>{{ s.admin.email }}</td>
-                        <td>{{ s.course.name }}</td>
-                        <td>Sem {{ s.current_semester }} - Sec {{ s.section }}</td>
-                        <td>{{ s.roll_number|default:"-" }}</td>
-                        <td>
-                            <span class="badge {% if s.status == 'Active' %}bg-success{% elif s.status == 'Graduated' %}bg-primary{% elif s.status == 'Alumni' %}bg-info{% else %}bg-secondary{% endif %}">
-                                {{ s.status }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if s.fee_account %}
-                                <span class="badge {% if s.fee_account.status == 'Paid' %}bg-success{% elif s.fee_account.status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                    {{ s.fee_account.status }}
-                                </span>
-                            {% else %}
-                                <span class="text-muted small">No account</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">No student records found matching filter.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="container-fluid">
+    <!-- Status Filter Tabs (Resolving 24 Total vs 17 Active Discrepancy) -->
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-body py-2 px-3">
+            <ul class="nav nav-pills">
+                <li class="nav-item">
+                    <a class="nav-link {% if not selected_status %}active{% endif %}" href="{% url 'principal_students' %}?course={{ selected_course }}&search={{ search_query }}">
+                        <i class="fas fa-users me-1"></i> All Enrolled Students <span class="badge bg-secondary ms-1">{{ total_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if selected_status == 'Active' %}active{% endif %}" href="{% url 'principal_students' %}?status=Active&course={{ selected_course }}&search={{ search_query }}">
+                        <i class="fas fa-user-check text-success me-1"></i> Active Enrolled <span class="badge bg-success ms-1">{{ active_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if selected_status == 'Alumni' %}active{% endif %}" href="{% url 'principal_students' %}?status=Alumni&course={{ selected_course }}&search={{ search_query }}">
+                        <i class="fas fa-user-friends text-info me-1"></i> Alumni <span class="badge bg-info ms-1">{{ alumni_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if selected_status == 'Graduated' %}active{% endif %}" href="{% url 'principal_students' %}?status=Graduated&course={{ selected_course }}&search={{ search_query }}">
+                        <i class="fas fa-graduation-cap text-primary me-1"></i> Graduated <span class="badge bg-primary ms-1">{{ graduated_count }}</span>
+                    </a>
+                </li>
+            </ul>
         </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="erpnext-card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-center">
+                {% if selected_status %}
+                    <input type="hidden" name="status" value="{{ selected_status }}">
+                {% endif %}
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Department / Course Filter</label>
+                    <select name="course" class="form-select form-select-sm">
+                        <option value="">All Departments</option>
+                        {% for c in courses %}
+                            <option value="{{ c.id }}" {% if selected_course == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Search Student</label>
+                    <input type="text" name="search" class="form-control form-control-sm" value="{{ search_query }}" placeholder="Search by name, email, roll number, admission number...">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-sm btn-primary me-2 w-100"><i class="fas fa-filter me-1"></i> Filter & Search</button>
+                    <a href="{% url 'principal_students' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Students Table with Actions & Profiles -->
+    <div class="erpnext-card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light py-3">
+            <h5 class="card-title mb-0 fw-bold">Student Body Roster ({{ students.paginator.count }})</h5>
+            <span class="text-muted small">Showing page {{ students.number }} of {{ students.paginator.num_pages }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Student Name</th>
+                            <th>Email Address</th>
+                            <th>Department / Course</th>
+                            <th>Semester / Section</th>
+                            <th>Roll / Adm No</th>
+                            <th>Status</th>
+                            <th>Fee Status</th>
+                            <th class="text-center">Profile Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>{{ forloop.counter0|add:students.start_index }}</td>
+                            <td>
+                                <strong>{{ s.admin.first_name }} {{ s.admin.last_name }}</strong>
+                            </td>
+                            <td>{{ s.admin.email }}</td>
+                            <td>{{ s.course.name }}</td>
+                            <td>Sem {{ s.current_semester }} - Sec {{ s.section }}</td>
+                            <td>
+                                <div><strong>{{ s.roll_number|default:"-" }}</strong></div>
+                                <small class="text-muted">Adm: {{ s.admission_number|default:"-" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if s.status == 'Active' %}bg-success{% elif s.status == 'Graduated' %}bg-primary{% elif s.status == 'Alumni' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ s.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if s.fee_account %}
+                                    <span class="badge {% if s.fee_account.status == 'Paid' %}bg-success{% elif s.fee_account.status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ s.fee_account.status }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small">No account</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'student_profile' s.id %}" class="btn btn-sm btn-outline-primary shadow-sm" title="Inspect Complete Student Profile, Academic Results & Multi-Project Portfolio">
+                                    <i class="fas fa-id-card me-1"></i> View Profile
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="fas fa-user-slash fa-3x text-muted mb-3 d-block"></i>
+                                No student records found matching the active filter.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if students.has_other_pages %}
+        <div class="card-footer bg-light py-2">
+            <nav aria-label="Student roster pagination">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    {% if students.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ students.previous_page_number }}&status={{ selected_status }}&course={{ selected_course }}&search={{ search_query }}">Previous</a></li>
+                    {% endif %}
+                    {% for num in students.paginator.page_range %}
+                        <li class="page-item {% if students.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}&status={{ selected_status }}&course={{ selected_course }}&search={{ search_query }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+                    {% if students.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ students.next_page_number }}&status={{ selected_status }}&course={{ selected_course }}&search={{ search_query }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}

@@ -1,0 +1,136 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'registrar_home' %}">Registrar</a></li>
+    <li class="breadcrumb-item active">Add Faculty</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold"><i class="fas fa-chalkboard-teacher text-success me-2"></i>Official Faculty Appointment Form</h5>
+                    <a href="{% url 'registrar_faculty_directory' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Faculty Directory
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <!-- Personal Account Details -->
+                        <h6 class="text-success fw-bold mb-3 border-bottom pb-2"><i class="fas fa-id-card me-2"></i>1. Account & Identity Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">First Name <span class="text-danger">*</span></label>
+                                <input type="text" name="first_name" class="form-control" required placeholder="e.g. Priya">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" name="last_name" class="form-control" required placeholder="e.g. Nair">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Gender <span class="text-danger">*</span></label>
+                                <select name="gender" class="form-select" required>
+                                    <option value="F">Female</option>
+                                    <option value="M">Male</option>
+                                    <option value="O">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Institutional Email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" class="form-control" required placeholder="faculty@college.edu">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Login Password <span class="text-danger">*</span></label>
+                                <input type="password" name="password" class="form-control" required placeholder="Set secure initial password">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Residential Address</label>
+                                <input type="text" name="address" class="form-control" placeholder="City, State, PIN">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Profile Photo</label>
+                                <input type="file" name="profile_pic" class="form-control" accept="image/*">
+                            </div>
+                        </div>
+
+                        <!-- Employment Details -->
+                        <h6 class="text-success fw-bold mb-3 border-bottom pb-2"><i class="fas fa-briefcase me-2"></i>2. Department & Employment Designation</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Primary Department <span class="text-danger">*</span></label>
+                                <select name="department" class="form-select" required>
+                                    <option value="">Select Department</option>
+                                    {% for d in departments %}
+                                        <option value="{{ d.id }}">{{ d.name }} ({{ d.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Academic Course Affiliation</label>
+                                <select name="course" class="form-select">
+                                    <option value="">Select Course (Legacy)</option>
+                                    {% for c in courses %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Faculty Employee ID</label>
+                                <input type="text" name="faculty_id" class="form-control" placeholder="e.g. FAC-2024-012">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Designation <span class="text-danger">*</span></label>
+                                <select name="designation" class="form-select" required>
+                                    <option value="Assistant Professor">Assistant Professor</option>
+                                    <option value="Associate Professor">Associate Professor</option>
+                                    <option value="Professor">Professor</option>
+                                    <option value="Head of Department">Head of Department (HOD)</option>
+                                    <option value="Dean">Dean</option>
+                                    <option value="Adjunct Faculty">Adjunct Faculty</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Date of Joining</label>
+                                <input type="date" name="date_of_joining" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Highest Qualification</label>
+                                <input type="text" name="highest_qualification" class="form-control" placeholder="e.g. Ph.D. in Computer Science">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Specialization Domain</label>
+                                <input type="text" name="specialization" class="form-control" placeholder="e.g. Artificial Intelligence & NLP">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Total Teaching Experience (Years)</label>
+                                <input type="number" step="0.5" name="total_experience_years" class="form-control" value="0.0">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                            <a href="{% url 'registrar_faculty_directory' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-success fw-bold px-4">
+                                <i class="fas fa-check-circle me-1"></i> Appoint Faculty & Issue Credentials
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -33,6 +33,8 @@ def role_required(allowed_roles=None):
                 return redirect(reverse('finance_home'))
             elif user_type == '7':
                 return redirect(reverse('accreditation_home'))
+            elif user_type == '8':
+                return redirect(reverse('registrar_home'))
             elif user_type == '6':
                 return redirect(reverse('admin_home'))
             return redirect(reverse('login_page'))
@@ -66,3 +68,7 @@ def hr_required(view_func):
 
 def accreditation_required(view_func):
     return role_required(['7', '4', '1'])(view_func)
+
+
+def registrar_required(view_func):
+    return role_required(['8', '1', '4'])(view_func)

@@ -309,9 +309,12 @@ def student_view_profile(request):
                 if password:
                     admin.set_password(password)
                 if passport:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    admin.profile_pic = fs.url(filename)
+                    try:
+                        fs = FileSystemStorage()
+                        filename = fs.save(passport.name, passport)
+                        admin.profile_pic = fs.url(filename)
+                    except Exception:
+                        pass
                 admin.first_name = first_name
                 admin.last_name = last_name
                 admin.address = address

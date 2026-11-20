@@ -34,8 +34,16 @@
                         <td><span class="badge bg-info text-dark">{{ p.tier }}</span></td>
                         <td>{{ p.coordinator|default:"<span class='text-muted'>Unassigned</span>" }}</td>
                         <td>
-                            <span class="badge bg-primary me-1">{{ p.pos.count }} POs</span>
-                            <span class="badge bg-secondary">{{ p.psos.count }} PSOs</span>
+                            {% if p.pos.count > 0 %}
+                                <span class="badge bg-success me-1"><i class="fas fa-check-circle me-1"></i>{{ p.pos.count }} POs</span>
+                                {% if p.psos.count > 0 %}
+                                    <span class="badge bg-info text-dark">{{ p.psos.count }} PSOs</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border">PSOs Pending</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Awaiting DAC Ratification</span>
+                            {% endif %}
                         </td>
                         <td>
                             <a href="{% url 'nba_program_detail' p.id %}" class="btn btn-sm btn-outline-primary py-1 px-2">

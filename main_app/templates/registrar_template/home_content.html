@@ -1,0 +1,212 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Quick Actions Banner -->
+    <div class="erpnext-card mb-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h3 class="fw-bold mb-1"><i class="fas fa-university me-2"></i>Office of the Registrar</h3>
+                    <p class="mb-0 text-white-50">Central authority for student admissions, faculty onboarding, departmental appointments, and institutional academic structures.</p>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                    <a href="{% url 'registrar_add_student' %}" class="btn btn-light btn-sm fw-bold me-2 shadow-sm">
+                        <i class="fas fa-user-plus text-primary me-1"></i> Add Student
+                    </a>
+                    <a href="{% url 'registrar_add_faculty' %}" class="btn btn-light btn-sm fw-bold me-2 shadow-sm">
+                        <i class="fas fa-chalkboard-teacher text-success me-1"></i> Add Faculty
+                    </a>
+                    <a href="{% url 'registrar_appoint_hod' %}" class="btn btn-warning btn-sm fw-bold shadow-sm">
+                        <i class="fas fa-user-tie me-1"></i> Appoint HOD
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Institutional KPI Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Total Students</div>
+                        <h2 class="fw-bold text-info mb-0">{{ total_students }}</h2>
+                        <small class="text-success"><i class="fas fa-check-circle"></i> {{ active_students }} Active | {{ alumni_students }} Alumni</small>
+                    </div>
+                    <div class="stat-icon bg-info text-white rounded-circle p-3">
+                        <i class="fas fa-user-graduate fa-2x"></i>
+                    </div>
+                </div>
+                <a href="{% url 'registrar_student_directory' %}" class="btn btn-sm btn-outline-info w-100 mt-2">
+                    <i class="fas fa-list me-1"></i> View Directory
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Total Faculty</div>
+                        <h2 class="fw-bold text-success mb-0">{{ total_faculty }}</h2>
+                        <small class="text-muted"><i class="fas fa-chalkboard"></i> {{ active_faculty }} Active Staff</small>
+                    </div>
+                    <div class="stat-icon bg-success text-white rounded-circle p-3">
+                        <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                    </div>
+                </div>
+                <a href="{% url 'registrar_faculty_directory' %}" class="btn btn-sm btn-outline-success w-100 mt-2">
+                    <i class="fas fa-users-cog me-1"></i> View Directory
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Departments</div>
+                        <h2 class="fw-bold text-warning mb-0">{{ total_departments }}</h2>
+                        <small class="text-muted"><i class="fas fa-sitemap"></i> Academic & Allied</small>
+                    </div>
+                    <div class="stat-icon bg-warning text-white rounded-circle p-3">
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                </div>
+                <a href="{% url 'registrar_manage_departments' %}" class="btn btn-sm btn-outline-warning w-100 mt-2">
+                    <i class="fas fa-cog me-1"></i> Manage
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <div class="erpnext-card p-3 border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Degree Programmes</div>
+                        <h2 class="fw-bold text-primary mb-0">{{ total_programmes }}</h2>
+                        <small class="text-muted"><i class="fas fa-layer-group"></i> {{ total_batches }} Batches ({{ total_sections }} Sec)</small>
+                    </div>
+                    <div class="stat-icon bg-primary text-white rounded-circle p-3">
+                        <i class="fas fa-graduation-cap fa-2x"></i>
+                    </div>
+                </div>
+                <a href="{% url 'registrar_manage_programmes' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                    <i class="fas fa-eye me-1"></i> Programmes
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Department Heads (HOD Appointments) -->
+    <div class="erpnext-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light py-3">
+            <h5 class="card-title mb-0 fw-bold"><i class="fas fa-user-tie text-primary me-2"></i>Official Department Heads (Active HOD Appointments)</h5>
+            <a href="{% url 'registrar_appoint_hod' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-file-signature me-1"></i> Issue Appointment Order
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Department</th>
+                            <th>Appointed Faculty Head</th>
+                            <th>Designation</th>
+                            <th>Appointment Order No.</th>
+                            <th>Start Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in active_hods %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ appt.department.name }}</strong>
+                                <span class="badge bg-secondary ms-1">{{ appt.department.code }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ appt.faculty.admin.first_name }} {{ appt.faculty.admin.last_name }}</strong>
+                                <div class="text-muted small">{{ appt.faculty.admin.email }}</div>
+                            </td>
+                            <td>{{ appt.faculty.designation }}</td>
+                            <td><code>{{ appt.appointment_order_no }}</code></td>
+                            <td>{{ appt.start_date }}</td>
+                            <td><span class="badge bg-success">Active HOD</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No active HOD appointments currently recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Enrolments & Staff Appointments -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="erpnext-card">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-user-graduate text-info me-2"></i>Recently Enrolled Students</h6>
+                    <a href="{% url 'registrar_student_directory' %}" class="btn btn-xs btn-outline-info">View All ({{ total_students }})</a>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for st in recent_students %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <strong>{{ st.admin.first_name }} {{ st.admin.last_name }}</strong>
+                                <div class="text-muted small">{{ st.admin.email }} | Adm: {{ st.admission_number }}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ st.course.name|default:"General" }}</span>
+                                <div class="text-muted small">Sem {{ st.current_semester }}</div>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-3">No student records found.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="erpnext-card">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-chalkboard-teacher text-success me-2"></i>Faculty Appointments</h6>
+                    <a href="{% url 'registrar_faculty_directory' %}" class="btn btn-xs btn-outline-success">View All ({{ total_faculty }})</a>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for sf in recent_faculty %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <strong>{{ sf.admin.first_name }} {{ sf.admin.last_name }}</strong>
+                                <div class="text-muted small">{{ sf.admin.email }} | ID: {{ sf.faculty_id }}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success">{{ sf.designation }}</span>
+                                <div class="text-muted small">{{ sf.primary_department.name|default:sf.course.name }}</div>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-3">No faculty records found.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -14,6 +14,7 @@ from django.views.generic import UpdateView
 
 from .forms import *
 from .models import *
+from .decorators import role_required
 
 
 def admin_home(request):
@@ -113,9 +114,12 @@ def add_staff(request):
             passport = request.FILES.get('profile_pic')
             passport_url = ''
             if passport:
-                fs = FileSystemStorage()
-                filename = fs.save(passport.name, passport)
-                passport_url = fs.url(filename)
+                try:
+                    fs = FileSystemStorage()
+                    filename = fs.save(passport.name, passport)
+                    passport_url = fs.url(filename)
+                except Exception:
+                    passport_url = ''
             try:
                 user = CustomUser.objects.create_user(
                     email=email, password=password, user_type=2,
@@ -175,9 +179,12 @@ def add_student(request):
             passport = request.FILES.get('profile_pic')
             passport_url = ''
             if passport:
-                fs = FileSystemStorage()
-                filename = fs.save(passport.name, passport)
-                passport_url = fs.url(filename)
+                try:
+                    fs = FileSystemStorage()
+                    filename = fs.save(passport.name, passport)
+                    passport_url = fs.url(filename)
+                except Exception:
+                    passport_url = ''
             try:
                 user = CustomUser.objects.create_user(
                     email=email, password=password, user_type=3,
@@ -343,6 +350,46 @@ def manage_course(request):
     return render(request, "hod_template/manage_course.html", context)
 
 
+@role_required(['1', '4', '8'])
+def manage_departments(request):
+    departments = Department.objects.prefetch_related('programmes', 'faculty_members', 'hod_appointments__faculty__admin').all()
+    context = {
+        'departments': departments,
+        'page_title': 'Manage Departments'
+    }
+    return render(request, "hod_template/manage_department.html", context)
+
+
+@role_required(['1', '4', '7', '8'])
+def manage_programmes(request):
+    programmes = Programme.objects.select_related('department').prefetch_related('batches', 'students').all()
+    context = {
+        'programmes': programmes,
+        'page_title': 'Manage Academic Programmes'
+    }
+    return render(request, "hod_template/manage_programme.html", context)
+
+
+@role_required(['1', '4', '7', '8'])
+def manage_regulations(request):
+    regulations = AcademicRegulation.objects.select_related('programme').all().order_by('-effective_year')
+    context = {
+        'regulations': regulations,
+        'page_title': 'Institutional Academic Regulations'
+    }
+    return render(request, "hod_template/manage_regulations.html", context)
+
+
+@role_required(['1', '2', '4', '7', '8'])
+def manage_projects(request):
+    projects = StudentProject.objects.select_related('primary_programme', 'secondary_programme', 'guide', 'co_guide').prefetch_related('students__admin').all().order_by('-created_at')
+    context = {
+        'projects': projects,
+        'page_title': 'Capstone & Interdisciplinary Projects'
+    }
+    return render(request, "hod_template/manage_projects.html", context)
+
+
 def manage_subject(request):
     subjects = Subject.objects.all()
     context = {
@@ -386,10 +433,13 @@ def edit_staff(request, staff_id):
                 if password is not None:
                     user.set_password(password)
                 if passport is not None:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    passport_url = fs.url(filename)
-                    user.profile_pic = passport_url
+                    try:
+                        fs = FileSystemStorage()
+                        filename = fs.save(passport.name, passport)
+                        passport_url = fs.url(filename)
+                        user.profile_pic = passport_url
+                    except Exception:
+                        pass
                 user.first_name = first_name
                 user.last_name = last_name
                 user.gender = gender
@@ -450,10 +500,13 @@ def edit_student(request, student_id):
             try:
                 user = CustomUser.objects.get(id=student.admin.id)
                 if passport is not None:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    passport_url = fs.url(filename)
-                    user.profile_pic = passport_url
+                    try:
+                        fs = FileSystemStorage()
+                        filename = fs.save(passport.name, passport)
+                        passport_url = fs.url(filename)
+                        user.profile_pic = passport_url
+                    except Exception:
+                        pass
                 user.email = email
                 if password is not None:
                     user.set_password(password)
@@ -655,6 +708,9 @@ def view_staff_leave(request):
             status = -1
         try:
             leave = get_object_or_404(LeaveReportStaff, id=id)
+            # Separation of duties: A user cannot approve their own leave
+            if hasattr(request.user, 'staff') and leave.staff == request.user.staff:
+                return HttpResponse("Forbidden: Self-approval of leave is prohibited.", status=403)
             leave.status = status
             leave.save()
             return HttpResponse(True)
@@ -699,7 +755,7 @@ def admin_view_attendance(request):
     return render(request, "hod_template/admin_view_attendance.html", context)
 
 
-@csrf_exempt
+@role_required(['1', '4'])
 def get_admin_attendance(request):
     subject_id = request.POST.get('subject')
     session_id = request.POST.get('session')
@@ -741,10 +797,13 @@ def admin_view_profile(request):
                 if password != None:
                     custom_user.set_password(password)
                 if passport != None:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    passport_url = fs.url(filename)
-                    custom_user.profile_pic = passport_url
+                    try:
+                        fs = FileSystemStorage()
+                        filename = fs.save(passport.name, passport)
+                        passport_url = fs.url(filename)
+                        custom_user.profile_pic = passport_url
+                    except Exception:
+                        pass
                 custom_user.first_name = first_name
                 custom_user.last_name = last_name
                 custom_user.save()

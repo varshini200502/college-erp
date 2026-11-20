@@ -16,6 +16,7 @@ db.sqlite3
 # Static files collected during deployment
 /static/
 /staticfiles/
+/staticfiles_build/
 
 # Environments & secrets
 .vscode

@@ -1,0 +1,561 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'principal_home' %}">Principal</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'principal_students' %}">Students</a></li>
+    <li class="breadcrumb-item active">{{ student.admin.first_name }} {{ student.admin.last_name }}</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Student Header Dossier -->
+    <div class="erpnext-card mb-4 shadow-sm">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center mb-3 mb-md-0">
+                    {% if student.admin.profile_pic %}
+                        <img src="{{ student.admin.profile_pic }}" alt="Student Avatar" class="rounded-circle img-thumbnail shadow-sm" style="width: 110px; height: 110px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-light text-primary d-inline-flex align-items-center justify-content-center border" style="width: 110px; height: 110px;">
+                            <i class="fas fa-user-graduate fa-4x"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h3 class="fw-bold mb-1 text-dark">{{ student.admin.first_name }} {{ student.admin.last_name }}</h3>
+                    <div class="text-muted mb-2">
+                        <i class="fas fa-envelope me-1"></i> {{ student.admin.email }} | 
+                        <i class="fas fa-phone me-1"></i> {{ student.phone|default:"Not Provided" }}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="badge bg-primary fs-6">{{ student.programme.name|default:student.course.name }}</span>
+                        <span class="badge bg-secondary">Sem {{ student.current_semester }} - Sec {{ student.section }}</span>
+                        <span class="badge {% if student.status == 'Active' %}bg-success{% elif student.status == 'Graduated' %}bg-primary{% elif student.status == 'Alumni' %}bg-info{% else %}bg-secondary{% endif %}">
+                            {{ student.status }}
+                        </span>
+                        <span class="badge bg-light text-dark border">Roll: {{ student.roll_number|default:"-" }}</span>
+                        <span class="badge bg-light text-dark border">Adm: {{ student.admission_number|default:"-" }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4 mt-3 mt-md-0">
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">CGPA</div>
+                                <h4 class="fw-bold text-primary mb-0">{{ student.cgpa|default:"-" }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Attendance</div>
+                                <h4 class="fw-bold {% if attendance_pct >= 75 %}text-success{% elif attendance_pct >= 65 %}text-warning{% else %}text-danger{% endif %} mb-0">{{ attendance_pct }}%</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Projects</div>
+                                <h4 class="fw-bold text-purple mb-0" style="color: #6f42c1;">{{ projects.count }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7-Section Navigation Tabs -->
+    <ul class="nav nav-tabs erpnext-tabs mb-4" id="studentProfileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab">
+                <i class="fas fa-id-card me-1"></i> A. Personal & Admission
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button" role="tab">
+                <i class="fas fa-poll me-1"></i> B. Academic Results ({{ results.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+                <i class="fas fa-project-diagram me-1 text-purple"></i> C. Project Portfolio ({{ projects.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="internships-tab" data-bs-toggle="tab" data-bs-target="#internships" type="button" role="tab">
+                <i class="fas fa-briefcase me-1 text-info"></i> D. Internships ({{ internships.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="placement-tab" data-bs-toggle="tab" data-bs-target="#placement" type="button" role="tab">
+                <i class="fas fa-building me-1 text-success"></i> E. Placement & Career ({{ placements.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="overseas-tab" data-bs-toggle="tab" data-bs-target="#overseas" type="button" role="tab">
+                <i class="fas fa-globe-americas me-1 text-primary"></i> F. Overseas Progression ({{ overseas_records.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="achievements-tab" data-bs-toggle="tab" data-bs-target="#achievements" type="button" role="tab">
+                <i class="fas fa-trophy me-1 text-warning"></i> G. Achievements ({{ achievements.count }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="studentProfileTabContent">
+
+        <!-- TAB A: Personal & Admission Information -->
+        <div class="tab-pane fade show active" id="personal" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="erpnext-card h-100">
+                        <div class="card-header bg-light py-3">
+                            <h6 class="card-title mb-0 fw-bold"><i class="fas fa-user text-primary me-2"></i>Personal Identity & Contact</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr><th class="w-40 bg-light">Full Name</th><td>{{ student.admin.first_name }} {{ student.admin.last_name }}</td></tr>
+                                <tr><th class="bg-light">Gender</th><td>{% if student.admin.gender == 'M' %}Male{% elif student.admin.gender == 'F' %}Female{% else %}Other{% endif %}</td></tr>
+                                <tr><th class="bg-light">Date of Birth</th><td>{{ student.date_of_birth|default:"Not on file" }}</td></tr>
+                                <tr><th class="bg-light">Email Address</th><td>{{ student.admin.email }}</td></tr>
+                                <tr><th class="bg-light">Primary Phone</th><td>{{ student.phone|default:"Not on file" }}</td></tr>
+                                <tr><th class="bg-light">Residential Address</th><td>{{ student.admin.address|default:"Not on file" }}</td></tr>
+                                <tr><th class="bg-light">Parent / Guardian</th><td>{{ student.parent_name|default:"Not on file" }}</td></tr>
+                                <tr><th class="bg-light">Parent Phone</th><td>{{ student.parent_phone|default:"Not on file" }}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="erpnext-card h-100">
+                        <div class="card-header bg-light py-3">
+                            <h6 class="card-title mb-0 fw-bold"><i class="fas fa-university text-primary me-2"></i>Institutional Admission & Academic Mapping</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr><th class="w-40 bg-light">Admission Number</th><td><code>{{ student.admission_number|default:"-" }}</code></td></tr>
+                                <tr><th class="bg-light">Roll Number</th><td><code>{{ student.roll_number|default:"-" }}</code></td></tr>
+                                <tr><th class="bg-light">Department</th><td>{{ student.course.name|default:"-" }}</td></tr>
+                                <tr><th class="bg-light">Degree Programme</th><td>{{ student.programme.name|default:student.course.name }}</td></tr>
+                                <tr><th class="bg-light">Admission Batch</th><td>{{ student.batch.batch_name|default:"General Cohort" }}</td></tr>
+                                <tr><th class="bg-light">Current Semester</th><td>Semester {{ student.current_semester }}</td></tr>
+                                <tr><th class="bg-light">Section Division</th><td>Section {{ student.section }}</td></tr>
+                                <tr><th class="bg-light">Academic Session</th><td>{{ student.session|default:"Current Session" }}</td></tr>
+                                <tr><th class="bg-light">Current Status</th><td><span class="badge bg-success">{{ student.status }}</span></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB B: Academic Performance & Results -->
+        <div class="tab-pane fade" id="academic" role="tabpanel">
+            <div class="erpnext-card mb-4">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-poll text-primary me-2"></i>Subject-Wise Marks & Continuous Assessment</h6>
+                    <span class="badge bg-primary">Total Subjects Evaluated: {{ results.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Subject Code & Name</th>
+                                    <th>Internal / Test Marks</th>
+                                    <th>Final Semester Exam</th>
+                                    <th>Total Marks</th>
+                                    <th>Result Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in results %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ r.subject.name }}</strong></td>
+                                    <td>{{ r.test }}</td>
+                                    <td>{{ r.exam }}</td>
+                                    <td><strong>{{ r.test|add:r.exam }}</strong></td>
+                                    <td>
+                                        {% if r.exam >= 35 %}
+                                            <span class="badge bg-success">Passed</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Backlog</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No examination results recorded for this student yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Trail -->
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-calendar-check text-success me-2"></i>Attendance Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded bg-light">
+                                <div class="text-muted small">Total Sessions Conducted</div>
+                                <h3 class="fw-bold mb-0">{{ total_attendance }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded bg-light">
+                                <div class="text-muted small">Sessions Present</div>
+                                <h3 class="fw-bold text-success mb-0">{{ present_attendance }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded bg-light">
+                                <div class="text-muted small">Overall Attendance Percentage</div>
+                                <h3 class="fw-bold {% if attendance_pct >= 75 %}text-success{% elif attendance_pct >= 65 %}text-warning{% else %}text-danger{% endif %} mb-0">{{ attendance_pct }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                    {% if attendance_pct < 75 %}
+                        <div class="alert alert-warning mb-0 small">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Attendance is below the mandatory 75% institutional requirement. Subject to official condonation or detention per approved academic regulations.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB C: Multi-Project Portfolio (7-Stage Lifecycle) -->
+        <div class="tab-pane fade" id="projects" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-project-diagram text-purple me-2"></i>Student Project Portfolio (Multi-Project History)</h5>
+                <span class="badge bg-purple" style="background:#6f42c1; color:white;">{{ projects.count }} Projects Recorded</span>
+            </div>
+
+            {% for p in projects %}
+            <div class="erpnext-card mb-4 border-start border-4 border-purple shadow-sm" style="border-left-color: #6f42c1 !important;">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary me-2">{{ p.project_type }}</span>
+                        <h5 class="fw-bold d-inline mb-0 text-dark">{{ p.title }}</h5>
+                        <span class="badge bg-light text-dark border ms-2">AY: {{ p.academic_year }}</span>
+                    </div>
+                    <div>
+                        <span class="badge {% if p.lifecycle_status == 'Completed' %}bg-success{% elif p.lifecycle_status == 'Published/Awarded' %}bg-primary{% elif p.lifecycle_status == 'In Progress' %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                            {{ p.lifecycle_status }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="small text-muted text-uppercase fw-bold">Technical Domain & Subdomain</div>
+                            <div class="fw-bold text-dark"><i class="fas fa-microchip text-primary me-1"></i> {{ p.technical_domain }}</div>
+                            {% if p.technical_subdomain %}
+                                <small class="text-muted">Subdomain: {{ p.technical_subdomain }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted text-uppercase fw-bold">Primary Programme Ownership</div>
+                            <div class="fw-bold text-dark"><i class="fas fa-graduation-cap text-success me-1"></i> {{ p.primary_programme.name }} ({{ p.primary_programme.code }})</div>
+                            {% if p.secondary_programme %}
+                                <small class="text-muted">Interdisciplinary Partner: {{ p.secondary_programme.name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Problem Statement & Objectives -->
+                    {% if p.problem_statement %}
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <div class="small text-muted text-uppercase fw-bold mb-1"><i class="fas fa-bullseye me-1"></i>Problem Statement & Objectives</div>
+                        <p class="mb-1 text-dark">{{ p.problem_statement }}</p>
+                        {% if p.objectives %}
+                            <small class="text-muted d-block"><strong>Key Objectives:</strong> {{ p.objectives }}</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Tech Stack & Architecture -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="small text-muted text-uppercase fw-bold">Technologies & Frameworks</div>
+                            <div>{{ p.technologies|default:"Not specified" }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted text-uppercase fw-bold">Faculty Guide & Mentorship</div>
+                            <div>
+                                <i class="fas fa-chalkboard-teacher text-info me-1"></i>
+                                <strong>{{ p.guide|default:"Unassigned" }}</strong>
+                                {% if p.co_guide %}<span class="text-muted">| Co-Guide: {{ p.co_guide }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Team Members -->
+                    <div class="mb-3">
+                        <div class="small text-muted text-uppercase fw-bold mb-1">Project Team Members</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for mem in p.students.all %}
+                                <a href="{% url 'student_profile' mem.id %}" class="badge bg-light text-dark border p-2 text-decoration-none">
+                                    <i class="fas fa-user-circle me-1"></i>{{ mem.admin.first_name }} {{ mem.admin.last_name }} ({{ mem.roll_number|default:mem.admin.email }})
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Repositories & Demos -->
+                    <div class="d-flex flex-wrap gap-3 align-items-center border-top pt-3">
+                        {% if p.repository_url %}
+                            <a href="{{ p.repository_url }}" target="_blank" class="btn btn-sm btn-outline-dark">
+                                <i class="fab fa-github me-1"></i> Code Repository
+                            </a>
+                        {% endif %}
+                        {% if p.demo_url %}
+                            <a href="{{ p.demo_url }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-external-link-alt me-1"></i> Live Demo / Deployment
+                            </a>
+                        {% endif %}
+                        <div class="ms-auto text-end">
+                            <span class="text-muted small me-2">Rubric Evaluation Total:</span>
+                            <span class="badge bg-primary fs-6">{{ p.total_score }} / 100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="erpnext-card p-5 text-center text-muted">
+                <i class="fas fa-folder-open fa-3x text-muted mb-3 d-block"></i>
+                No capstone or research projects recorded in this student's portfolio yet.
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- TAB D: Internships & Industry Experience -->
+        <div class="tab-pane fade" id="internships" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-briefcase text-info me-2"></i>Internships & Practical Industry Experience</h6>
+                    <span class="badge bg-info">{{ internships.count }} Records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Company / Organization</th>
+                                    <th>Domain</th>
+                                    <th>Type</th>
+                                    <th>Duration</th>
+                                    <th>Period</th>
+                                    <th>Skills Acquired</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in internships %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ i.company_name }}</strong></td>
+                                    <td>{{ i.domain }}</td>
+                                    <td><span class="badge bg-secondary">{{ i.internship_type }}</span></td>
+                                    <td>{{ i.duration_weeks }} weeks</td>
+                                    <td>{{ i.start_date|default:"-" }} to {{ i.end_date|default:"-" }}</td>
+                                    <td>{{ i.skills_acquired|default:"-" }}</td>
+                                    <td>
+                                        {% if i.is_verified %}
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No internship records on file.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB E: Placement & Career Outcomes -->
+        <div class="tab-pane fade" id="placement" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-building text-success me-2"></i>Campus Placement & Career Transition</h6>
+                    <span class="badge bg-success">{{ placements.count }} Records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Type</th>
+                                    <th>Company / University</th>
+                                    <th>Designation / Programme</th>
+                                    <th>Package (LPA) / Exam</th>
+                                    <th>Academic Year</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pl in placements %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        {% if pl.is_higher_studies %}
+                                            <span class="badge bg-primary">Higher Studies</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Employment</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ pl.company_name|default:pl.institution_name }}</strong></td>
+                                    <td>{{ pl.designation|default:"Postgraduate Studies" }}</td>
+                                    <td>
+                                        {% if pl.is_higher_studies %}
+                                            Exam: {{ pl.qualifying_exam|default:"-" }}
+                                        {% else %}
+                                            <strong>{{ pl.package_lpa }} LPA</strong>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ pl.academic_year }}</td>
+                                    <td>
+                                        {% if pl.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Self-Reported</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">No placement or career records recorded.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB F: International & Overseas Progression -->
+        <div class="tab-pane fade" id="overseas" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-globe-americas text-primary me-2"></i>International & Overseas Progression Outcomes</h6>
+                    <span class="badge bg-primary">{{ overseas_records.count }} Records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Outcome Category</th>
+                                    <th>Foreign University / Organization</th>
+                                    <th>Host Country</th>
+                                    <th>Degree / Programme</th>
+                                    <th>Admission Year</th>
+                                    <th>Scholarship / Funding</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ov in overseas_records %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><span class="badge bg-info text-dark">{{ ov.progression_type }}</span></td>
+                                    <td><strong>{{ ov.foreign_university }}</strong></td>
+                                    <td><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ ov.country }}</td>
+                                    <td>{{ ov.degree_programme }}</td>
+                                    <td>{{ ov.admission_year }}</td>
+                                    <td>{{ ov.scholarship_details|default:"Self-funded" }}</td>
+                                    <td>
+                                        {% if ov.is_verified %}
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">No overseas progression records on file for this student.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB G: Achievements & Certifications -->
+        <div class="tab-pane fade" id="achievements" role="tabpanel">
+            <div class="erpnext-card">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold"><i class="fas fa-trophy text-warning me-2"></i>Awards, Hackathons & Co-Curricular Achievements</h6>
+                    <span class="badge bg-warning text-dark">{{ achievements.count }} Records</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Category</th>
+                                    <th>Achievement Title</th>
+                                    <th>Event / Organization</th>
+                                    <th>Date</th>
+                                    <th>Academic Year</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in achievements %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><span class="badge bg-secondary">{{ a.category }}</span></td>
+                                    <td><strong>{{ a.title }}</strong></td>
+                                    <td>{{ a.event_name|default:a.organization }}</td>
+                                    <td>{{ a.date|default:"-" }}</td>
+                                    <td>{{ a.academic_year }}</td>
+                                    <td>
+                                        {% if a.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Unverified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">No extracurricular achievements or certifications recorded.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
