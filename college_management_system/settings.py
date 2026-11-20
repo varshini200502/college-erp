@@ -36,6 +36,9 @@ DEBUG = os.environ.get('DEBUG', 'True' if 'RENDER' not in os.environ else 'False
 
 if DEBUG:
     os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
+else:
+    # Explicitly unset in production to satisfy Django's async.E001 check
+    os.environ.pop('DJANGO_ALLOW_ASYNC_UNSAFE', None)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
