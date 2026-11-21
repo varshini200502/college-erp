@@ -65,12 +65,15 @@ def principal_home(request):
     total_patents = FacultyPatent.objects.count()
     total_fdps = FacultyTraining.objects.count()
 
-    # Department-wise Breakdown
-    courses = Course.objects.all()
+    # Department-wise Breakdown (bulk group-by queries to eliminate N+1 loops)
+    courses = list(Course.objects.all().order_by('id'))
+    stu_by_course = dict(Student.objects.filter(status='Active').values('course_id').annotate(c=Count('id')).values_list('course_id', 'c'))
+    staff_by_course = dict(Staff.objects.filter(employment_status='Active').values('course_id').annotate(c=Count('id')).values_list('course_id', 'c'))
+
     dept_stats = []
     for c in courses:
-        s_count = Student.objects.filter(course=c, status='Active').count()
-        f_count = Staff.objects.filter(course=c, employment_status='Active').count()
+        s_count = stu_by_course.get(c.id, 0)
+        f_count = staff_by_course.get(c.id, 0)
         p_count = StudentProject.objects.filter(Q(primary_programme__department__code=c.name) | Q(guide__course=c)).count()
         dept_stats.append({
             'course': c,

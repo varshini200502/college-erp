@@ -3,7 +3,7 @@ import requests
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.db import models as django_models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import (HttpResponse, HttpResponseRedirect,
                               get_object_or_404, redirect, render)
@@ -20,55 +20,42 @@ from .decorators import role_required
 def admin_home(request):
     total_staff = Staff.objects.all().count()
     total_students = Student.objects.all().count()
-    subjects = Subject.objects.all()
-    total_subject = subjects.count()
     total_course = Course.objects.all().count()
-    attendance_list = Attendance.objects.filter(subject__in=subjects)
-    total_attendance = attendance_list.count()
-    attendance_list = []
-    subject_list = []
-    for subject in subjects:
-        attendance_count = Attendance.objects.filter(subject=subject).count()
-        subject_list.append(subject.name[:7])
-        attendance_list.append(attendance_count)
+    total_subject = Subject.objects.all().count()
 
-    # Total Subjects and students in Each Course
-    course_all = Course.objects.all()
-    course_name_list = []
-    subject_count_list = []
-    student_count_list_in_course = []
+    # Subjects with attendance count (1 bulk group-by query instead of N queries)
+    subjects = list(Subject.objects.select_related('course').all().order_by('id'))
+    att_counts = dict(Attendance.objects.values('subject_id').annotate(c=Count('id')).values_list('subject_id', 'c'))
+    attendance_list = [att_counts.get(s.id, 0) for s in subjects]
 
-    for course in course_all:
-        subjects = Subject.objects.filter(course_id=course.id).count()
-        students = Student.objects.filter(course_id=course.id).count()
-        course_name_list.append(course.name)
-        subject_count_list.append(subjects)
-        student_count_list_in_course.append(students)
-    
-    subject_all = Subject.objects.all()
-    subject_list = []
-    student_count_list_in_subject = []
-    for subject in subject_all:
-        course = Course.objects.get(id=subject.course.id)
-        student_count = Student.objects.filter(course_id=course.id).count()
-        subject_list.append(subject.name)
-        student_count_list_in_subject.append(student_count)
+    # Courses with subject and student counts (2 bulk group-by queries instead of 2*N queries)
+    course_all = list(Course.objects.all().order_by('id'))
+    courses_stu_counts = dict(Student.objects.values('course_id').annotate(c=Count('id')).values_list('course_id', 'c'))
+    courses_sub_counts = dict(Subject.objects.values('course_id').annotate(c=Count('id')).values_list('course_id', 'c'))
 
+    course_name_list = [c.name for c in course_all]
+    subject_count_list = [courses_sub_counts.get(c.id, 0) for c in course_all]
+    student_count_list_in_course = [courses_stu_counts.get(c.id, 0) for c in course_all]
 
-    # For Students
-    student_attendance_present_list=[]
-    student_attendance_leave_list=[]
-    student_name_list=[]
+    subject_list = [s.name for s in subjects]
+    student_count_list_in_subject = [courses_stu_counts.get(s.course_id, 0) for s in subjects]
 
-    students = Student.objects.all()
+    # Students attendance present/absent/leave (3 bulk queries + select_related instead of 4*N queries)
+    students = list(Student.objects.select_related('admin').all().order_by('id'))
+    att_present = dict(AttendanceReport.objects.filter(status=True).values('student_id').annotate(c=Count('id')).values_list('student_id', 'c'))
+    att_absent = dict(AttendanceReport.objects.filter(status=False).values('student_id').annotate(c=Count('id')).values_list('student_id', 'c'))
+    leave_counts = dict(LeaveReportStudent.objects.filter(status=1).values('student_id').annotate(c=Count('id')).values_list('student_id', 'c'))
+
+    student_attendance_present_list = []
+    student_attendance_leave_list = []
+    student_name_list = []
     for student in students:
-        
-        attendance = AttendanceReport.objects.filter(student_id=student.id, status=True).count()
-        absent = AttendanceReport.objects.filter(student_id=student.id, status=False).count()
-        leave = LeaveReportStudent.objects.filter(student_id=student.id, status=1).count()
-        student_attendance_present_list.append(attendance)
-        student_attendance_leave_list.append(leave+absent)
-        student_name_list.append(student.admin.first_name)
+        pres = att_present.get(student.id, 0)
+        absn = att_absent.get(student.id, 0)
+        lv = leave_counts.get(student.id, 0)
+        student_attendance_present_list.append(pres)
+        student_attendance_leave_list.append(lv + absn)
+        student_name_list.append(student.admin.first_name if student.admin else 'Unknown')
 
     context = {
         'page_title': "Administrative Dashboard",

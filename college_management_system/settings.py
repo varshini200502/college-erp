@@ -231,7 +231,7 @@ AUTHENTICATION_BACKENDS = ['main_app.EmailBackend.EmailBackend']
 # Session Configuration
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_SAVE_EVERY_REQUEST = True
+SESSION_SAVE_EVERY_REQUEST = False
 
 # HTTPS & Cookie Security (enforced in production when DEBUG is False)
 if not DEBUG:

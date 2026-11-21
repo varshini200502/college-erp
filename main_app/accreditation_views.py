@@ -24,6 +24,8 @@ from .naac_automation import sync_all_naac_criteria, sync_criterion
 
 def seed_naac_criteria_if_needed():
     """Ensure standard 7 NAAC criteria exist."""
+    if NAACCriterion.objects.count() >= 7:
+        return
     standard_criteria = [
         (1, "Curricular Aspects", 100, "Curricular planning, academic flexibility, curriculum enrichment, and feedback systems."),
         (2, "Teaching-Learning and Evaluation", 350, "Student enrollment, diversity, student-teacher ratio, teaching methods, and evaluation processes."),
