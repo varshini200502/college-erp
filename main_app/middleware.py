@@ -27,11 +27,23 @@ class LoginCheckMiddleWare(MiddlewareMixin):
 
         if user.is_authenticated:
             # Check user role and restrict access to unauthorized module endpoints
-            # Admin (1) & Principal (4) have broad administrative access
-            if user_type in ['1', '4']:
+            # 1. Admin (1): Strictly Technical/System Administrator - Restricted from Operational Modules
+            if user_type == '1':
+                if modulename in [
+                    'main_app.student_views',
+                    'main_app.registrar_views',
+                    'main_app.finance_views',
+                    'main_app.accreditation_views',
+                    'main_app.principal_views',
+                    'main_app.hr_views',
+                ]:
+                    messages.error(request, "Access Denied: Admin is restricted to system administration and technical configuration.")
+                    return redirect(reverse('admin_home'))
+
+            # 2. Principal (4): Executive Institutional Oversight
+            elif user_type == '4':
                 if modulename == 'main_app.student_views':
-                    target = 'principal_home' if user_type == '4' else 'admin_home'
-                    return redirect(reverse(target))
+                    return redirect(reverse('principal_home'))
             elif user_type == '2':  # Staff / Faculty
                 if modulename in ['main_app.student_views', 'main_app.principal_views', 'main_app.finance_views', 'main_app.hr_views']:
                     return redirect(reverse('staff_home'))

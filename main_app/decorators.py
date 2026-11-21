@@ -17,7 +17,7 @@ def role_required(allowed_roles=None):
             if not request.user.is_authenticated:
                 return redirect(reverse('login_page'))
             user_type = str(getattr(request.user, 'user_type', ''))
-            if user_type in allowed_roles or request.user.is_superuser:
+            if user_type in allowed_roles:
                 return view_func(request, *args, **kwargs)
             messages.error(request, "You do not have permission to access this resource.")
             # redirect to their respective home
@@ -43,7 +43,7 @@ def role_required(allowed_roles=None):
 
 
 def admin_required(view_func):
-    return role_required(['1', '4'])(view_func)
+    return role_required(['1'])(view_func)
 
 
 def principal_required(view_func):
@@ -59,16 +59,16 @@ def student_required(view_func):
 
 
 def finance_required(view_func):
-    return role_required(['5', '4', '1'])(view_func)
+    return role_required(['5', '4'])(view_func)
 
 
 def hr_required(view_func):
-    return role_required(['6', '4', '1'])(view_func)
+    return role_required(['6', '4'])(view_func)
 
 
 def accreditation_required(view_func):
-    return role_required(['7', '4', '1'])(view_func)
+    return role_required(['7', '4'])(view_func)
 
 
 def registrar_required(view_func):
-    return role_required(['8', '1', '4'])(view_func)
+    return role_required(['8', '4'])(view_func)

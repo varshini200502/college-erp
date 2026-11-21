@@ -17,6 +17,7 @@ from .models import *
 from .decorators import role_required
 
 
+@role_required(['1'])
 def admin_home(request):
     total_staff = Staff.objects.all().count()
     total_students = Student.objects.all().count()
@@ -76,6 +77,7 @@ def admin_home(request):
     return render(request, 'hod_template/home_content.html', context)
 
 
+@role_required(['8', '4'])
 def add_staff(request):
     form = StaffForm(request.POST or None, request.FILES or None)
     context = {'form': form, 'page_title': 'Add Staff'}
@@ -139,6 +141,7 @@ def add_staff(request):
     return render(request, 'hod_template/add_staff_template.html', context)
 
 
+@role_required(['8', '4'])
 def add_student(request):
     student_form = StudentForm(request.POST or None, request.FILES or None)
     context = {'form': student_form, 'page_title': 'Add Student'}
@@ -204,6 +207,7 @@ def add_student(request):
     return render(request, 'hod_template/add_student_template.html', context)
 
 
+@role_required(['1', '4', '8'])
 def add_course(request):
     form = CourseForm(request.POST or None)
     context = {
@@ -226,6 +230,7 @@ def add_course(request):
     return render(request, 'hod_template/add_course_template.html', context)
 
 
+@role_required(['1', '4', '8'])
 def add_subject(request):
     form = SubjectForm(request.POST or None)
     context = {
@@ -254,6 +259,7 @@ def add_subject(request):
     return render(request, 'hod_template/add_subject_template.html', context)
 
 
+@role_required(['8', '4'])
 def manage_staff(request):
     query = request.GET.get('q', '')
     course_filter = request.GET.get('course', '')
@@ -285,6 +291,7 @@ def manage_staff(request):
     return render(request, "hod_template/manage_staff.html", context)
 
 
+@role_required(['8', '4'])
 def manage_student(request):
     query = request.GET.get('q', '')
     course_filter = request.GET.get('course', '')
@@ -328,6 +335,7 @@ def manage_student(request):
     return render(request, "hod_template/manage_student.html", context)
 
 
+@role_required(['1', '4', '8'])
 def manage_course(request):
     courses = Course.objects.all()
     context = {
@@ -367,7 +375,7 @@ def manage_regulations(request):
     return render(request, "hod_template/manage_regulations.html", context)
 
 
-@role_required(['1', '2', '4', '7', '8'])
+@role_required(['2', '4', '7', '8'])
 def manage_projects(request):
     projects = StudentProject.objects.select_related('primary_programme', 'secondary_programme', 'guide', 'co_guide').prefetch_related('students__admin').all().order_by('-created_at')
     context = {
@@ -377,6 +385,7 @@ def manage_projects(request):
     return render(request, "hod_template/manage_projects.html", context)
 
 
+@role_required(['1', '4', '8'])
 def manage_subject(request):
     subjects = Subject.objects.all()
     context = {
@@ -386,6 +395,7 @@ def manage_subject(request):
     return render(request, "hod_template/manage_subject.html", context)
 
 
+@role_required(['8', '4'])
 def edit_staff(request, staff_id):
     staff = get_object_or_404(Staff, id=staff_id)
     form = StaffForm(request.POST or None, instance=staff)
@@ -454,6 +464,7 @@ def edit_staff(request, staff_id):
     return render(request, "hod_template/edit_staff_template.html", context)
 
 
+@role_required(['8', '4'])
 def edit_student(request, student_id):
     student = get_object_or_404(Student, id=student_id)
     form = StudentForm(request.POST or None, instance=student)
@@ -526,6 +537,7 @@ def edit_student(request, student_id):
     return render(request, "hod_template/edit_student_template.html", context)
 
 
+@role_required(['1', '4', '8'])
 def edit_course(request, course_id):
     instance = get_object_or_404(Course, id=course_id)
     form = CourseForm(request.POST or None, instance=instance)
@@ -550,6 +562,7 @@ def edit_course(request, course_id):
     return render(request, 'hod_template/edit_course_template.html', context)
 
 
+@role_required(['1', '4', '8'])
 def edit_subject(request, subject_id):
     instance = get_object_or_404(Subject, id=subject_id)
     form = SubjectForm(request.POST or None, instance=instance)
@@ -578,6 +591,7 @@ def edit_subject(request, subject_id):
     return render(request, 'hod_template/edit_subject_template.html', context)
 
 
+@role_required(['1', '4', '8'])
 def add_session(request):
     form = SessionForm(request.POST or None)
     context = {'form': form, 'page_title': 'Add Session'}
@@ -594,12 +608,14 @@ def add_session(request):
     return render(request, "hod_template/add_session_template.html", context)
 
 
+@role_required(['1', '4', '8'])
 def manage_session(request):
     sessions = Session.objects.all()
     context = {'sessions': sessions, 'page_title': 'Manage Sessions'}
     return render(request, "hod_template/manage_session.html", context)
 
 
+@role_required(['1', '4', '8'])
 def edit_session(request, session_id):
     instance = get_object_or_404(Session, id=session_id)
     form = SessionForm(request.POST or None, instance=instance)
@@ -636,6 +652,7 @@ def check_email_availability(request):
 
 
 @csrf_exempt
+@role_required(['4', '2'])
 def student_feedback_message(request):
     if request.method != 'POST':
         feedbacks = FeedbackStudent.objects.all()
@@ -657,6 +674,7 @@ def student_feedback_message(request):
 
 
 @csrf_exempt
+@role_required(['4'])
 def staff_feedback_message(request):
     if request.method != 'POST':
         feedbacks = FeedbackStaff.objects.all()
@@ -678,6 +696,7 @@ def staff_feedback_message(request):
 
 
 @csrf_exempt
+@role_required(['4', '2'])
 def view_staff_leave(request):
     if request.method != 'POST':
         allLeave = LeaveReportStaff.objects.all()
@@ -706,6 +725,7 @@ def view_staff_leave(request):
 
 
 @csrf_exempt
+@role_required(['4', '2'])
 def view_student_leave(request):
     if request.method != 'POST':
         allLeave = LeaveReportStudent.objects.all()
@@ -730,6 +750,7 @@ def view_student_leave(request):
             return False
 
 
+@role_required(['1', '4'])
 def admin_view_attendance(request):
     subjects = Subject.objects.all()
     sessions = Session.objects.all()
@@ -766,6 +787,7 @@ def get_admin_attendance(request):
         return None
 
 
+@role_required(['1'])
 def admin_view_profile(request):
     admin = get_object_or_404(Admin, admin=request.user)
     form = AdminForm(request.POST or None, request.FILES or None,
@@ -804,6 +826,7 @@ def admin_view_profile(request):
     return render(request, "hod_template/admin_view_profile.html", context)
 
 
+@role_required(['1', '4'])
 def admin_notify_staff(request):
     staff = CustomUser.objects.filter(user_type=2)
     context = {
@@ -813,6 +836,7 @@ def admin_notify_staff(request):
     return render(request, "hod_template/staff_notification.html", context)
 
 
+@role_required(['1', '4'])
 def admin_notify_student(request):
     student = CustomUser.objects.filter(user_type=3)
     context = {
@@ -823,6 +847,7 @@ def admin_notify_student(request):
 
 
 @csrf_exempt
+@role_required(['1', '4'])
 def send_student_notification(request):
     id = request.POST.get('id')
     message = request.POST.get('message')
@@ -850,6 +875,7 @@ def send_student_notification(request):
 
 
 @csrf_exempt
+@role_required(['1', '4'])
 def send_staff_notification(request):
     id = request.POST.get('id')
     message = request.POST.get('message')
@@ -876,6 +902,7 @@ def send_staff_notification(request):
         return HttpResponse("False")
 
 
+@role_required(['8', '4'])
 def delete_staff(request, staff_id):
     staff_obj = get_object_or_404(Staff, id=staff_id)
     # Prefer deactivation over destructive deletion to preserve historical institutional records
@@ -887,6 +914,7 @@ def delete_staff(request, staff_id):
     return redirect(reverse('manage_staff'))
 
 
+@role_required(['8', '4'])
 def delete_student(request, student_id):
     student_obj = get_object_or_404(Student, id=student_id)
     # Prefer deactivation over destructive deletion to preserve academic/fee records
@@ -898,6 +926,7 @@ def delete_student(request, student_id):
     return redirect(reverse('manage_student'))
 
 
+@role_required(['8', '4'])
 def toggle_student_status(request, student_id):
     student = get_object_or_404(Student, id=student_id)
     new_status = request.POST.get('status', 'Active')
@@ -913,6 +942,7 @@ def toggle_student_status(request, student_id):
     return redirect(reverse('manage_student'))
 
 
+@role_required(['8', '4'])
 def toggle_staff_status(request, staff_id):
     staff = get_object_or_404(Staff, id=staff_id)
     new_status = request.POST.get('employment_status', 'Active')
@@ -924,6 +954,7 @@ def toggle_staff_status(request, staff_id):
     return redirect(reverse('manage_staff'))
 
 
+@role_required(['1', '4', '7'])
 def institutional_documents(request):
     documents = InstitutionalDocument.objects.all().order_by('-created_at')
     courses = Course.objects.all()
@@ -964,6 +995,7 @@ def institutional_documents(request):
     return render(request, 'hod_template/institutional_documents.html', context)
 
 
+@role_required(['1', '4', '7'])
 def verify_institutional_document(request, doc_id):
     doc = get_object_or_404(InstitutionalDocument, id=doc_id)
     decision = request.POST.get('decision') == 'true'
@@ -975,6 +1007,7 @@ def verify_institutional_document(request, doc_id):
     return redirect(reverse('institutional_documents'))
 
 
+@role_required(['1', '4'])
 def system_audit_logs(request):
     logs = SystemAuditLog.objects.all().order_by('-timestamp')[:100]
     context = {
@@ -984,6 +1017,7 @@ def system_audit_logs(request):
     return render(request, 'hod_template/system_audit_logs.html', context)
 
 
+@role_required(['1', '4', '8'])
 def centralized_reports(request):
     total_students = Student.objects.filter(status='Active').count()
     alumni_students = Student.objects.filter(status__in=['Graduated', 'Alumni']).count()
@@ -1011,6 +1045,7 @@ def centralized_reports(request):
     return render(request, 'hod_template/centralized_reports.html', context)
 
 
+@role_required(['1', '4', '8'])
 def delete_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     try:
@@ -1022,6 +1057,7 @@ def delete_course(request, course_id):
     return redirect(reverse('manage_course'))
 
 
+@role_required(['1', '4', '8'])
 def delete_subject(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id)
     subject.delete()
@@ -1029,6 +1065,7 @@ def delete_subject(request, subject_id):
     return redirect(reverse('manage_subject'))
 
 
+@role_required(['1', '4', '8'])
 def delete_session(request, session_id):
     session = get_object_or_404(Session, id=session_id)
     try:
@@ -1045,6 +1082,7 @@ def delete_session(request, session_id):
 # ALUMNI MANAGEMENT VIEWS
 # ============================================================
 
+@role_required(['8', '4'])
 def graduate_student(request, student_id):
     """Mark a student as Graduated and create/update their AlumniProfile."""
     student = get_object_or_404(Student, id=student_id)
@@ -1101,6 +1139,7 @@ def graduate_student(request, student_id):
         return render(request, 'hod_template/graduate_student.html', context)
 
 
+@role_required(['8', '4'])
 def alumni_list(request):
     """List all alumni with search and filter."""
     query = request.GET.get('q', '')
@@ -1151,6 +1190,7 @@ def alumni_list(request):
     return render(request, 'hod_template/alumni_list.html', context)
 
 
+@role_required(['8', '4'])
 def alumni_detail(request, alumni_id):
     """View and update detailed alumni profile."""
     alumni = get_object_or_404(AlumniProfile, id=alumni_id)

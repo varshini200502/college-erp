@@ -357,7 +357,7 @@ def faculty_profile(request, staff_id):
     return render(request, 'principal_template/faculty_profile_detail.html', context)
 
 
-@role_required(['4', '8', '1'])
+@role_required(['4', '2'])
 def principal_project_analytics(request):
     """
     Phase 4: Student Project & Innovation Dashboard.
@@ -444,7 +444,7 @@ def principal_project_analytics(request):
     return render(request, 'principal_template/project_analytics.html', context)
 
 
-@role_required(['4', '8', '1'])
+@role_required(['4', '2'])
 def principal_international_analytics(request):
     """
     Phase 5: International and Overseas Progression Analytics.

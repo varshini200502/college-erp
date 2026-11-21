@@ -293,27 +293,6 @@
             </div>
         </div>
 
-        <h6 class="nav-section-title">User Operations</h6>
-        <div class="nav-item">
-            <a href="{% url 'manage_staff' %}" class="nav-link {% if 'staff' in request.path and not 'leave' in request.path and not 'notification' in request.path %}active{% endif %}">
-                <i class="nav-icon fas fa-users-cog"></i>
-                <span class="nav-text">Manage Faculty</span>
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="{% url 'manage_student' %}" class="nav-link {% if 'student' in request.path and not 'leave' in request.path and not 'notification' in request.path and not 'feedback' in request.path %}active{% endif %}">
-                <i class="nav-icon fas fa-users"></i>
-                <span class="nav-text">Manage Students</span>
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="{% url 'alumni_list' %}" class="nav-link {% if 'alumni' in request.path %}active{% endif %}">
-                <i class="nav-icon fas fa-user-graduate"></i>
-                <span class="nav-text">Alumni Management</span>
-            </a>
-        </div>
-
-
         <h6 class="nav-section-title">Institutional Management</h6>
         <div class="nav-item">
             <a href="{% url 'institutional_documents' %}" class="nav-link {% if request.path == '/institutional/documents/' %}active{% endif %}">
@@ -333,19 +312,7 @@
                 <span class="nav-text">System Audit Trails</span>
             </a>
         </div>
-        <h6 class="nav-section-title">Innovation & Progression</h6>
-        <div class="nav-item">
-            <a href="{% url 'principal_projects' %}" class="nav-link {% if 'principal/projects' in request.path %}active{% endif %}">
-                <i class="nav-icon fas fa-project-diagram"></i>
-                <span class="nav-text">Project & Domain Analytics</span>
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="{% url 'principal_international' %}" class="nav-link {% if 'principal/international' in request.path %}active{% endif %}">
-                <i class="nav-icon fas fa-globe-americas"></i>
-                <span class="nav-text">International Progression</span>
-            </a>
-        </div>
+        <h6 class="nav-section-title">System Monitoring & Comms</h6>
         <div class="nav-item">
             <a href="{% url 'admin_view_attendance' %}" class="nav-link {% if request.path == '/attendance/view/' %}active{% endif %}">
                 <i class="nav-icon fas fa-calendar-check"></i>
@@ -353,15 +320,15 @@
             </a>
         </div>
         <div class="nav-item">
-            <a href="{% url 'view_staff_leave' %}" class="nav-link {% if request.path == '/staff/view/leave/' %}active{% endif %}">
-                <i class="nav-icon fas fa-plane-departure"></i>
-                <span class="nav-text">Faculty Leaves</span>
+            <a href="{% url 'admin_notify_student' %}" class="nav-link {% if request.path == '/admin_notify_student' %}active{% endif %}">
+                <i class="nav-icon fas fa-bullhorn"></i>
+                <span class="nav-text">Student Announcements</span>
             </a>
         </div>
         <div class="nav-item">
-            <a href="{% url 'view_student_leave' %}" class="nav-link {% if request.path == '/student/view/leave/' %}active{% endif %}">
-                <i class="nav-icon fas fa-user-clock"></i>
-                <span class="nav-text">Student Leaves</span>
+            <a href="{% url 'admin_notify_staff' %}" class="nav-link {% if request.path == '/admin_notify_staff' %}active{% endif %}">
+                <i class="nav-icon fas fa-bell"></i>
+                <span class="nav-text">Faculty Announcements</span>
             </a>
         </div>
 
@@ -532,6 +499,12 @@
             <a href="{% url 'registrar_faculty_directory' %}" class="nav-link {% if request.path == '/registrar/faculty/' %}active{% endif %}">
                 <i class="nav-icon fas fa-users-cog"></i>
                 <span class="nav-text">Faculty Directory</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{% url 'alumni_list' %}" class="nav-link {% if 'alumni' in request.path %}active{% endif %}">
+                <i class="nav-icon fas fa-user-graduate"></i>
+                <span class="nav-text">Alumni Records</span>
             </a>
         </div>
 
