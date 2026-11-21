@@ -1,6 +1,7 @@
 from django.utils.deprecation import MiddlewareMixin
 from django.urls import reverse
 from django.shortcuts import redirect
+from django.contrib import messages
 from django.db.utils import OperationalError, ProgrammingError
 
 
